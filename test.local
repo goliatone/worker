@@ -2,6 +2,8 @@
 
 # Export env ROOT to current directory run test from absolute path
 ROOT=$PWD
+export $PASS="\e[32m \xE2\x9C\x93"
+export $FAIL="\e[31m \xE2\x9C\x97"
 
 # If tests are not executable, make sure they all are
 for TEST in $ROOT/tests/*; do chmod +x $TEST; done

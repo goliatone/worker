@@ -22,7 +22,7 @@ Just running it from the top is easy:
 ```shell
 git clone https://github.com/thibmaek/worker.git
 cd worker
-sudo ./make # sudo not required (except for macos.sh)
+./make
 ```
 
 `make` is the file that points your shell to each specific module.  
