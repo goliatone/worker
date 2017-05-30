@@ -31,11 +31,12 @@ brew 'screen'
 brew 'ssh-copy-id'
 brew 'trash'
 brew 'tree'
-brew 'givo'
+brew 'gibo'
 brew 'dvm'
-brew 'imagemagick', args: ['with-fftw', 'with-fontconfig', 'with-ghostscript', 'with-hdri', 'with-jp2', 'with-liblqr', 'with-librsvg', 'with-libtiff', 'with-libwmf', 'with-little-cms',
- 'with-openexr', 'with-pango', 'with-perl', 'with-quantum-depth-16', 'with-quantum-depth-32', 'with-quantum-depth-8', 'with-webp', 'with-x11']
 brew 'wget', args: ['with-iri']
+
+cask 'xquartz' #imagemagick dependency
+brew 'imagemagick', args: ['with-fftw', 'with-fontconfig', 'with-ghostscript', 'with-hdri', 'with-jp2', 'with-liblqr', 'with-librsvg', 'with-libtiff', 'with-libwmf', 'with-little-cms',  'with-openexr', 'with-pango', 'with-perl', 'with-quantum-depth-16', 'with-quantum-depth-32', 'with-quantum-depth-8', 'with-webp', 'with-x11']
 
 # ================================= #
 
@@ -44,7 +45,7 @@ cask 'iterm2'
 cask '1password'
 cask 'colorpicker-skalacolor'
 #docker-engine, docker-compose, docker-machine, kinematic. Brings viartualbox.
-cask 'dockertoolbox'
+cask 'docker-toolbox' #REDO
 cask 'dropbox'
 cask 'etcher'
 cask 'google-chrome-canary'
