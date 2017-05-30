@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-
-
 echo ""
 echo "Increasing sound quality for Bluetooth headphones/headsets"
 defaults write com.apple.BluetoothAudioAgent "Apple Bitpool Min (editable)" -int 40
@@ -40,6 +38,18 @@ defaults write com.apple.dock "expose-group-by-app" -bool true
 echo ""
 echo "Preventing Time Machine from prompting to use new hard drives as backup volume"
 defaults write com.apple.TimeMachine DoNotOfferNewDisksForBackup -bool true
+
+echo ""
+echo "Don’t display the annoying prompt when quitting iTerm"
+defaults write com.googlecode.iterm2 PromptOnQuit -bool false
+
+echo ""
+echo "In terminal, make the focus automatically follow the mouse"
+defaults write com.apple.terminal FocusFollowsMouse -string true
+
+echo ""
+echo "In terminal, only use UTF-8"
+defaults write com.apple.terminal StringEncodings -array 4
 
 echo ""
 echo "Disable the sudden motion sensor as it's not useful for SSDs"
