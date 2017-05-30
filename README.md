@@ -8,6 +8,8 @@ It currently presets all of the following:
 * [macOS sensible defaults](https://github.com/mathiasbynens/dotfiles/blob/master/.macos)
 * [Brew](https://github.com/Homebrew/homebrew) (with casks)
 * Node (trough [nvm](https://github.com/creationix/nvm)) (with global packages trough yarn)
+* Go (through [gvm]())
+* Docker (through [dvm]() and [docker-toolbox]())
 * Ruby (trough [rbenv](https://github.com/rbenv/rbenv))
 * Python (trough [pyenv](https://github.com/yyuu/pyenv))
 * [Atom](https://github.com/atom/atom) (with apm packages & themes)
@@ -35,3 +37,7 @@ There is a `test.local` script for locally running the tests.
 Tests are just shell scripts so you can add your own in.
 
 Run the local tests with `./test.local`
+
+#### TODO
+- [ ] Ask for password once when we run script
+- [ ] Ensure that rbenv has right permissions
