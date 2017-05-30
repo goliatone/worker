@@ -52,7 +52,15 @@ bundle install --gemfile="$ROOT/extensions/Gemfile"
 echo "Installing apm packages..."
 apm install --packages-file "$ROOT/extensions/Atomfile"
 
-# 10. Perform additional local changes described in ./worker.local
+# 10. Use the .gemrc file for Rubygems
+echo "Installing gvm to manage Go..."
+bash "$ROOT/modules/gvm.sh"
+
+# 11. Update macOS defaults
+echo "Updating macOS defaults..."
+bash "$ROOT/modules/mac.sh"
+
+# 12. Perform additional local changes described in ./worker.local
 if [[ -f "$ROOT/worker.local" ]]; then bash "$ROOT/worker.local"; fi
 
 # Reload modified applications
