@@ -21,15 +21,20 @@ regex-railroad-diagram
 uglify
 
 Sass-Syntax-Highlight
-jsonlint
 language-babel
 language-docker
-laravel
-linter-eslint
-linter-jsxhint
-linter-php
+language-ejs
+language-ini
+language-lua
+
+jshint
+
+linter-jshint
+linter-jsonlint
+linter-lua
+linter-lua-findglobals
 linter-scss-lint
-react
+
 qolor
 
 atom-toychest
