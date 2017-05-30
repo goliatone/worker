@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+eval "$(rbenv init -)"
+
+# Export rbenv 
+echo 'eval "$(rbenv init - --no-rehash)"' >> ~/.bash_profile
 # Using rbenv over macOS pre-installed Ruby in Brewfile
 rbenv init
 
