@@ -19,6 +19,7 @@ open-in-browser
 pigments
 regex-railroad-diagram
 uglify
+set-syntax
 
 Sass-Syntax-Highlight
 language-babel
