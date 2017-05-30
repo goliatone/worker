@@ -42,6 +42,7 @@ brew 'imagemagick', args: ['with-fftw', 'with-fontconfig', 'with-ghostscript', '
 # ================================= #
 
 cask 'atom'
+cask 'amazon-music'
 cask 'iterm2'
 cask '1password'
 cask 'colorpicker-skalacolor'
