@@ -1,3 +1,6 @@
+linter-ui-default
+intentions
+busy-signal
 activate-power-mode
 atom-mac-terminal
 atom-wrap-in-tag
@@ -27,8 +30,6 @@ language-docker
 language-ejs
 language-ini
 language-lua
-
-jshint
 
 linter-jshint
 linter-jsonlint
