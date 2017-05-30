@@ -2,7 +2,5 @@
 source "http://rubygems.org"
 
 gem 'cocoapods'
-gem 'glynn'
-gem 'jekyll'
 gem 'sass'
 gem 'scss-lint'
