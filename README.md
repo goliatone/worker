@@ -24,7 +24,7 @@ git clone https://github.com/thibmaek/worker.git .worker && cd .worker
 ./make
 ```
 
-`make` is the file that points your shell to each specific module.  
+`make` is the file that points your shell to each specific module.
 If you want to turn certain modules of, just comment them out from `make`
 
 If you want to you can also install this on a file-per-file base, just run the .sh files inside of the modules directory. The extensions directory installs additional content to the modules.
@@ -39,5 +39,7 @@ Tests are just shell scripts so you can add your own in.
 Run the local tests with `./test.local`
 
 #### TODO
-- [ ] Ask for password once when we run script
-- [ ] Ensure that rbenv has right permissions
+- [x] Ask for password once when we run script
+- [x] Ensure that rbenv has right permissions
+- [ ] dotfiles
+  - [ ] reminder about `ssh-add`
