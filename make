@@ -71,7 +71,11 @@ bash "$ROOT/modules/gvm.sh"
 echo "Updating macOS defaults..."
 bash "$ROOT/modules/mac.sh"
 
-# 12. Perform additional local changes described in ./worker.local
+# 12. Updte vim...
+echo "Installing vim..."
+bash "$ROOT/modules/vim.sh"
+
+# 14. Perform additional local changes described in ./worker.local
 if [[ -f "$ROOT/worker.local" ]]; then bash "$ROOT/worker.local"; fi
 
 # Reload modified applications
