@@ -13,6 +13,17 @@ ROOT=$PWD
 # Make sure we can execute each file
 for MODULE in $ROOT/modules/*; do chmod +x $MODULE; done
 
+#Include utils file
+if [ -x $ROOT/utils.sh ]; then
+    source $ROOT/utils.sh || exit 1
+else
+	echo "fuck $ROOT/utils.sh"
+fi
+
+# We get password before running script :)
+ask_for_sudo
+
+exit 0
 # 1. Install Command Line Tools.
 echo "Updating xcode-select..."
 xcode-select --install;
