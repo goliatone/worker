@@ -3,4 +3,4 @@ source "http://rubygems.org"
 
 gem 'cocoapods'
 gem 'sass'
-gem 'scss-lint'
+gem 'scss_lint'
