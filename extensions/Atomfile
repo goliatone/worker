@@ -22,6 +22,7 @@ pigments
 regex-railroad-diagram
 uglify
 set-syntax
+pretty-json
 
 Sass-Syntax-Highlight
 language-babel
