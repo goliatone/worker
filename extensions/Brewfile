@@ -47,30 +47,38 @@ brew 'imagemagick', args: ['with-fftw', 'with-fontconfig', 'with-ghostscript', '
 # ================================= #
 
 cask 'atom'
+cask 'macdown'
+
+cask 'iterm2'
+cask 'hyper'
+
+#docker-engine, docker-compose, docker-machine, kinematic. Brings viartualbox.
+cask 'docker-toolbox'
+cask 'mancy'
+cask 'postman'
+cask 'fastlane'
+cask 'spectacle'
+cask 'imageoptim'
+
 cask 'alfred'
 cask 'dash'
-cask 'amazon-music'
-cask 'mancy'
-cask 'iterm2'
+cask 'etcher'
+
+cask 'suspicious-package'
+
 cask '1password'
 cask 'colorpicker-skalacolor'
-#docker-engine, docker-compose, docker-machine, kinematic. Brings viartualbox.
-cask 'docker-toolbox' #REDO
 cask 'dropbox'
-cask 'etcher'
+cask 'slack'
+cask 'amazon-music'
+
 cask 'firefox'
 cask 'google-chrome'
 cask 'google-chrome-canary'
-cask 'hyper'
-cask 'imageoptim'
-cask 'postman'
+
 cask 'qlcolorcode'
 cask 'qlimagesize'
 cask 'qlmarkdown'
 cask 'qlstephen'
 cask 'quicklook-csv'
 cask 'quicklook-json'
-cask 'slack'
-cask 'spectacle'
-cask 'suspicious-package'
-cask 'fastlane'
