@@ -15,6 +15,7 @@ git-log
 git-plus
 linter
 markdown-writer
+markdown-toc
 merge-conflicts
 modular-snippets
 open-in-browser
