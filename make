@@ -23,7 +23,6 @@ fi
 # We get password before running script :)
 ask_for_sudo
 
-exit 0
 # 1. Install Command Line Tools.
 echo "Updating xcode-select..."
 xcode-select --install;
