@@ -20,7 +20,7 @@ This is great for setting up the tools you need. If you need to tweak the shell 
 Just running it from the top is easy:
 
 ```shell
-git clone https://github.com/thibmaek/worker.git .worker && cd .worker
+git clone https://github.com/goliatone/worker.git .worker && cd .worker
 ./make
 ```
 

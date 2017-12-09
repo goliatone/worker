@@ -6,12 +6,14 @@ tap 'homebrew/dupes'
 tap 'homebrew/versions'
 tap 'homebrew/command-not-found'
 tap 'caskroom/versions'
+tap 'caskroom/fonts' # github.com/caskroom/homebrew-fonts
 
 brew 'apm-bash-completion'
 brew 'awscli'
+
 #Bash 4
 brew 'bash'
-brew 'bash-completion'
+brew 'bash-completion@2' # github.com/scop/bash-completion (for Bash >4 use bash-completion instead)
 brew 'ccat'
 brew 'docker-completion'
 # Install GNU core utilities (those that come with OS X are outdated)
@@ -61,6 +63,9 @@ cask 'postman'
 cask 'fastlane'
 cask 'spectacle'
 cask 'imageoptim'
+cask 'insomnia' # insomnia.rest
+
+cask 'sketch' #sketch app
 
 cask 'alfred'
 cask 'dash'
@@ -73,14 +78,22 @@ cask 'colorpicker-skalacolor'
 cask 'dropbox'
 cask 'slack'
 cask 'amazon-music'
+cask 'spotify' # spotify.com
+cask 'skype' 
 
 cask 'firefox'
 cask 'google-chrome'
 cask 'google-chrome-canary'
 
-cask 'qlcolorcode'
-cask 'qlimagesize'
-cask 'qlmarkdown'
-cask 'qlstephen'
-cask 'quicklook-csv'
-cask 'quicklook-json'
+cask 'qlcolorcode' # github.com/n8gray/QLColorCode
+cask 'qlimagesize' # github.com/Nyx0uf/qlImageSize
+cask 'qlmarkdown' # github.com/toland/qlmarkdown
+cask 'qlstephen' # github.com/whomwah/qlstephen
+cask 'quicklook-csv' # github.com/p2/quicklook-csv
+cask 'quickjson' # github.com/johan/QuickJSON
+
+cask 'virtualbox' # virtualbox.org
+
+# — Fonts —
+cask 'font-hack'
+cask 'font-ibm-plex'
