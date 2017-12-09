@@ -79,8 +79,7 @@ if [[ -f "$ROOT/worker.local" ]]; then bash "$ROOT/worker.local"; fi
 
 # Reload modified applications
 for APP in "Activity Monitor" "Address Book" "Calendar" "Contacts" "cfprefsd" \
-"Dock" "Finder" "Mail" "Messages" "Safari" "SystemUIServer" \
-"Transmission" "Twitter"; do
+"Dock" "Finder" "Mail" "Messages" "Safari" "SystemUIServer"; do
 	killall "${APP}" > /dev/null 2>&1
 done
 
