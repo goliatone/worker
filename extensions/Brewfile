@@ -64,11 +64,12 @@ cask 'hyper'
 #docker-engine, docker-compose, docker-machine, kinematic. Brings viartualbox.
 cask 'docker-toolbox'
 cask 'mancy'
-cask 'postman'
-cask 'fastlane'
-cask 'spectacle'
-cask 'imageoptim'
-cask 'insomnia' # insomnia.rest
+cask 'fastlane'   #https://fastlane.tools/ you need to install manually
+cask 'spectacle'   #window management
+cask 'hammerspoon' #lua scripting for macos, you can do window management
+cask 'imageoptim' #optimize images
+cask 'postman'  # REST client
+cask 'insomnia' # REST client insomnia.rest
 
 cask 'sketch' #sketch app
 
