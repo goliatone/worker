@@ -14,7 +14,7 @@ It currently presets all of the following:
 * Python (trough [pyenv](https://github.com/yyuu/pyenv))
 * [Atom](https://github.com/atom/atom) (with apm packages & themes)
 
-This is great for setting up the tools you need. If you need to tweak the shell you might want to look into [my dotfiles](https://github.com/thibmaek/dotfiles).
+This is great for setting up the tools you need.
 
 ### Installing
 Just running it from the top is easy:
@@ -29,14 +29,6 @@ If you want to turn certain modules of, just comment them out from `make`
 
 If you want to you can also install this on a file-per-file base, just run the .sh files inside of the modules directory. The extensions directory installs additional content to the modules.
 
-### Modifying
-No problem forking this over to your own account, but don't bother sending a PR because I won't merge it unless it's a bug fix (though I prefer to use the issues on this repo for that.)
-
-#### Testing
-There is a `test.local` script for locally running the tests.
-Tests are just shell scripts so you can add your own in.
-
-Run the local tests with `./test.local`
 
 #### TODO
 - [x] Ask for password once when we run script
