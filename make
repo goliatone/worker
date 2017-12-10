@@ -74,6 +74,12 @@ bash "$ROOT/modules/mac.sh"
 echo "Installing vim..."
 bash "$ROOT/modules/vim.sh"
 
+echo "Configure iterm2..."
+bash "$ROOT/modules/iterm2.sh"
+
+echo "Configure zsh..."
+bash "$ROOT/modules/zsh.sh"
+
 # 14. Perform additional local changes described in ./worker.local
 if [[ -f "$ROOT/worker.local" ]]; then bash "$ROOT/worker.local"; fi
 
