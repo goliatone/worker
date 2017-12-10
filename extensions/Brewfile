@@ -36,9 +36,12 @@ brew 'tcping'
 brew 'mosquitto'
 brew 'screen'
 brew 'ssh-copy-id'
+cask 'osxfuse' #gnupg dependency, needs password
+brew 'gnupg', args: ['with-encfs', 'with-gpg-zip', 'with-gpgsplit', 'with-large-secmem', 'with-readline']
 brew 'trash'
 brew 'tree'
 brew 'gibo'
+brew 'yadm'
 brew 'dvm'
 brew 'zsh'
 brew 'zsh-completions'
