@@ -47,6 +47,7 @@ brew 'zsh'
 brew 'zsh-completions'
 brew 'wget', args: ['with-iri']
 brew 'vim', args: ['with-lua', 'with-luajit', 'with-override-system-vi']
+brew 'tmux'
 brew 'doxygen'
 cask 'xquartz' #imagemagick dependency
 brew 'imagemagick', args: ['with-fftw', 'with-fontconfig', 'with-ghostscript', 'with-hdri', 'with-openjpeg', 'with-liblqr', 'with-librsvg', 'with-libwmf', 'with-little-cms',  'with-openexr', 'with-pango', 'with-perl', 'with-quantum-depth-16', 'with-quantum-depth-32', 'with-quantum-depth-8', 'with-webp', 'with-x11']
