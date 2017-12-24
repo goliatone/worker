@@ -30,6 +30,14 @@ If you want to turn certain modules of, just comment them out from `make`
 If you want to you can also install this on a file-per-file base, just run the .sh files inside of the modules directory. The extensions directory installs additional content to the modules.
 
 
+##
+
+```
+curl -LOk https://github.com/goliatone/worker/archive/v0.1.zip
+unzip v0.1.zip
+mv worker* worker
+```
+
 #### TODO
 - [x] Ask for password once when we run script
 - [x] Ensure that rbenv has right permissions
