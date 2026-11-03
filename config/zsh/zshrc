@@ -4,6 +4,8 @@ ZSH_THEME="wezm"
 plugins=(git docker colored-man-pages command-not-found colorize jump aws)
 zstyle ':omz:update' mode disabled # This snapshot uses an explicit framework revision.
 
+[[ ! -r "$HOME/.config/worker/zshrc.shared.pre" ]] || source "$HOME/.config/worker/zshrc.shared.pre"
+
 typeset -U path fpath
 [[ ! -d "$HOME/.zsh/completions" ]] || fpath=("$HOME/.zsh/completions" $fpath)
 if [[ -r "$ZSH/oh-my-zsh.sh" ]]; then
@@ -84,4 +86,6 @@ if [[ -r "$HOME/.zsh/completions/_ctx" ]]; then
 fi
 
 # Keep credentials and machine-specific customizations in this untracked file.
+[[ ! -r "$HOME/.config/worker/zshrc.shared" ]] || source "$HOME/.config/worker/zshrc.shared"
+
 [[ ! -r "$HOME/.zshrc.local" ]] || source "$HOME/.zshrc.local"

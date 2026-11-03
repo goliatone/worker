@@ -4,8 +4,9 @@ ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 cd "$ROOT"
 for script in make utils.sh test.local modules/*.sh; do bash -n "$script"; done
 for config in config/zsh/zshenv config/zsh/zprofile config/zsh/zshrc; do zsh -n "$config"; done
+for script in config/workflow/ai-shot config/workflow/ctx.sh; do bash -n "$script"; done
 if command -v shellcheck >/dev/null 2>&1; then
-  shellcheck -x make utils.sh test.local modules/*.sh
+  shellcheck -x make utils.sh test.local modules/*.sh config/workflow/ai-shot config/workflow/ctx.sh
 else
   printf 'ShellCheck not found; install it to run the lint check.\n' >&2
   exit 1

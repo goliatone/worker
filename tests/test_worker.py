@@ -29,7 +29,7 @@ class WorkerTests(unittest.TestCase):
         self.env = {**os.environ, 'PATH': str(bin_dir) + ':/usr/bin:/bin:/usr/sbin:/sbin',
                     'WORKER_HOME': str(self.home), 'WORKER_TEST_PREFIX': str(self.prefix),
                     'WORKER_TEST_STATE': str(self.state), 'WORKER_TEST_LOG': str(self.log),
-                    'PYTHONDONTWRITEBYTECODE': '1'}
+                    'PYTHONDONTWRITEBYTECODE': '1', 'TMPDIR': str(self.base)}
         self.env.pop('BASH_ENV', None)
         self.env.pop('ENV', None)
 
@@ -303,7 +303,9 @@ exec /usr/bin/git ls-remote --get-url https://github.com/deskflow/homebrew-tap
         checkout = self.base / 'checkout with spaces'
         shutil.copytree(ROOT, checkout, ignore=shutil.ignore_patterns('.git', '__pycache__'))
         for name, selection in [('Brewfile', []), ('Brewfile.deskflow', ['--with-deskflow']),
-                                ('Brewfile.ai', ['--with-ai'])]:
+                                ('Brewfile.ai', ['--with-ai']),
+                                *[('Brewfile.' + name, ['--with-' + name])
+                                  for name in ('workflow', 'agents', 'backend', 'access', 'desktop')]]:
             manifest = checkout / 'extensions' / name
             original = manifest.read_bytes()
             manifest.unlink()

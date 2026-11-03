@@ -102,6 +102,9 @@ defaultBranch=main
 [pull]
 	rebase = true
 
+[include]
+  path = ~/.config/worker/gitconfig.shared
+
 # Private or machine-specific overrides (never copied into this repository).
 [include]
   path = ~/.gitconfig.local

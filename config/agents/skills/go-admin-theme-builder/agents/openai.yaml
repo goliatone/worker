@@ -1,0 +1,4 @@
+interface:
+  display_name: "Go Admin Theme Builder"
+  short_description: "Build source-grounded go-admin themes"
+  default_prompt: "Use $go-admin-theme-builder to translate an authoritative Figma design into a go-admin theme and validate the rendered result."

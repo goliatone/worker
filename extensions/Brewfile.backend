@@ -1,0 +1,12 @@
+# Package installation only: no services, trust-store changes, or data migration.
+tap "nats-io/nats-tools"
+tap "localstack/tap"
+brew "localstack/tap/lstk"
+brew "nats-io/nats-tools/nats"
+brew "nats-server"
+brew "postgresql@16"
+brew "golang-migrate"
+brew "mkcert"
+brew "cloudflared"
+brew "sops"
+cask "ngrok"

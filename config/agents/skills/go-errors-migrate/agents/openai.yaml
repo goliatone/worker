@@ -1,0 +1,4 @@
+interface:
+  display_name: "Go Errors Migrate"
+  short_description: "Migrate Go projects to go-errors"
+  default_prompt: "Use $go-errors-migrate to refactor this Go project onto go-errors safely."

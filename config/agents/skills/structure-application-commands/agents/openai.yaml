@@ -1,0 +1,4 @@
+interface:
+  display_name: "Structure Application Commands"
+  short_description: "Structure business logic behind typed commands"
+  default_prompt: "Use $structure-application-commands to structure this project’s business workflows as service-backed typed commands."

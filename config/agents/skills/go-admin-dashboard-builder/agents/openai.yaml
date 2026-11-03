@@ -1,0 +1,4 @@
+interface:
+  display_name: "Go Admin Dashboard Builder"
+  short_description: "Build go-admin dashboards and widget wiring"
+  default_prompt: "Use $go-admin-dashboard-builder to implement or customize a go-admin dashboard module, widget provider, renderer, or placement."

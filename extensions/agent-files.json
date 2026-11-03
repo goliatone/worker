@@ -1,0 +1,518 @@
+[
+  {
+    "source": "config/agents/codex.toml",
+    "destination": ".codex/config.toml",
+    "sha256": "7e5fd01ab13ce03de83fe0a7b22b4856fed5f04585ff69397a24ac414f84a933",
+    "executable": false
+  },
+  {
+    "source": "config/agents/claude.json",
+    "destination": ".claude/settings.json",
+    "sha256": "e20b784cabfd16adea10dd20c3dda77a2eaa33c30de3dbd0c2c92671cc296452",
+    "executable": false
+  },
+  {
+    "source": "config/agents/cursor.json",
+    "destination": ".cursor/cli-config.json",
+    "sha256": "21689ac7352693ff9a38fcd3112ae2cffca0eca0e4f1aaed29015bb41597589f",
+    "executable": false
+  },
+  {
+    "source": "config/agents/AGENTS.md",
+    "destination": ".codex/AGENTS.md",
+    "sha256": "c05732ca69ce00de5fa6ba2fca40f307907060ff681cd0e99d7e27a3d9c5d6a2",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/ctx/SKILL.md",
+    "destination": ".agents/skills/ctx/SKILL.md",
+    "sha256": "b7e31e423412e6008ef68a989f3984d573620f183a94597bb7c39026c43e2b4d",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/ctx/SKILL.md",
+    "destination": ".claude/skills/ctx/SKILL.md",
+    "sha256": "b7e31e423412e6008ef68a989f3984d573620f183a94597bb7c39026c43e2b4d",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/ctx/assets/codex/AGENTS.md",
+    "destination": ".agents/skills/ctx/assets/codex/AGENTS.md",
+    "sha256": "c05732ca69ce00de5fa6ba2fca40f307907060ff681cd0e99d7e27a3d9c5d6a2",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/ctx/assets/codex/AGENTS.md",
+    "destination": ".claude/skills/ctx/assets/codex/AGENTS.md",
+    "sha256": "c05732ca69ce00de5fa6ba2fca40f307907060ff681cd0e99d7e27a3d9c5d6a2",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/ctx/references/coordination.md",
+    "destination": ".agents/skills/ctx/references/coordination.md",
+    "sha256": "45f3dee5d8f1c23045c4d10e7079cd5ca9bdf5da634d40d3393c010bc140ce89",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/ctx/references/coordination.md",
+    "destination": ".claude/skills/ctx/references/coordination.md",
+    "sha256": "45f3dee5d8f1c23045c4d10e7079cd5ca9bdf5da634d40d3393c010bc140ce89",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/ctx/references/maintenance.md",
+    "destination": ".agents/skills/ctx/references/maintenance.md",
+    "sha256": "4089b7a5b2171465f55c323ce947f8cc19a90268848a29d6b6e9f95a1bde5133",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/ctx/references/maintenance.md",
+    "destination": ".claude/skills/ctx/references/maintenance.md",
+    "sha256": "4089b7a5b2171465f55c323ce947f8cc19a90268848a29d6b6e9f95a1bde5133",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/ctx/references/planning.md",
+    "destination": ".agents/skills/ctx/references/planning.md",
+    "sha256": "da200d02cfeb929ba851805d553c7d0d49ec7f62ec49f84942b7c4021f39a083",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/ctx/references/planning.md",
+    "destination": ".claude/skills/ctx/references/planning.md",
+    "sha256": "da200d02cfeb929ba851805d553c7d0d49ec7f62ec49f84942b7c4021f39a083",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/ctx/references/setup-and-prompts.md",
+    "destination": ".agents/skills/ctx/references/setup-and-prompts.md",
+    "sha256": "49b659dbeff9f3e0cfeed209bbe783ae39ead6faae7bcf72bc015212a84e47ed",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/ctx/references/setup-and-prompts.md",
+    "destination": ".claude/skills/ctx/references/setup-and-prompts.md",
+    "sha256": "49b659dbeff9f3e0cfeed209bbe783ae39ead6faae7bcf72bc015212a84e47ed",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/ctx/scripts/ctx.sh",
+    "destination": ".agents/skills/ctx/scripts/ctx.sh",
+    "sha256": "80b090e5d52ed17141cddeb862928f4f0259a6432966e9986ca83a9d9c9c68d9",
+    "executable": true
+  },
+  {
+    "source": "config/agents/skills/ctx/scripts/ctx.sh",
+    "destination": ".claude/skills/ctx/scripts/ctx.sh",
+    "sha256": "80b090e5d52ed17141cddeb862928f4f0259a6432966e9986ca83a9d9c9c68d9",
+    "executable": true
+  },
+  {
+    "source": "config/agents/skills/ctx-adr/SKILL.md",
+    "destination": ".agents/skills/ctx-adr/SKILL.md",
+    "sha256": "d2e5f4ac5ffb02796585d350beb435674214a7218234fe128b6cd39f03feb503",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/ctx-adr/SKILL.md",
+    "destination": ".claude/skills/ctx-adr/SKILL.md",
+    "sha256": "d2e5f4ac5ffb02796585d350beb435674214a7218234fe128b6cd39f03feb503",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/ctx-epic/SKILL.md",
+    "destination": ".agents/skills/ctx-epic/SKILL.md",
+    "sha256": "adbf7290133dbf53a07c0601547426d4d95624a773446769e895e8b4ad2a90a1",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/ctx-epic/SKILL.md",
+    "destination": ".claude/skills/ctx-epic/SKILL.md",
+    "sha256": "adbf7290133dbf53a07c0601547426d4d95624a773446769e895e8b4ad2a90a1",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-dashboard-builder/SKILL.md",
+    "destination": ".agents/skills/go-admin-dashboard-builder/SKILL.md",
+    "sha256": "3d2df818d242bff90ff0eacdbaa15906a9ca0894f586b09bdfba209fd2656f82",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-dashboard-builder/SKILL.md",
+    "destination": ".claude/skills/go-admin-dashboard-builder/SKILL.md",
+    "sha256": "3d2df818d242bff90ff0eacdbaa15906a9ca0894f586b09bdfba209fd2656f82",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-dashboard-builder/agents/openai.yaml",
+    "destination": ".agents/skills/go-admin-dashboard-builder/agents/openai.yaml",
+    "sha256": "e008e5d7a87aab4a2fee4af5c275c727a9b5cd07224cd732e63d247aa8f01b03",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-dashboard-builder/agents/openai.yaml",
+    "destination": ".claude/skills/go-admin-dashboard-builder/agents/openai.yaml",
+    "sha256": "e008e5d7a87aab4a2fee4af5c275c727a9b5cd07224cd732e63d247aa8f01b03",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-dashboard-builder/references/modules-and-navigation.md",
+    "destination": ".agents/skills/go-admin-dashboard-builder/references/modules-and-navigation.md",
+    "sha256": "1068de325654310799641e46dd41c7a19b85ca771df445a0405302ebc8288d82",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-dashboard-builder/references/modules-and-navigation.md",
+    "destination": ".claude/skills/go-admin-dashboard-builder/references/modules-and-navigation.md",
+    "sha256": "1068de325654310799641e46dd41c7a19b85ca771df445a0405302ebc8288d82",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-dashboard-builder/references/rendering-and-placements.md",
+    "destination": ".agents/skills/go-admin-dashboard-builder/references/rendering-and-placements.md",
+    "sha256": "e29634b1e2246c6e3024a8ff836777c4b7841fe5becb52d788a33c35071b5fb9",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-dashboard-builder/references/rendering-and-placements.md",
+    "destination": ".claude/skills/go-admin-dashboard-builder/references/rendering-and-placements.md",
+    "sha256": "e29634b1e2246c6e3024a8ff836777c4b7841fe5becb52d788a33c35071b5fb9",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-dashboard-builder/references/runtime-lifecycle.md",
+    "destination": ".agents/skills/go-admin-dashboard-builder/references/runtime-lifecycle.md",
+    "sha256": "84d8a849a30ca246a5356c8749188b0a708de6c4e005e4b745a6592fd03b33ca",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-dashboard-builder/references/runtime-lifecycle.md",
+    "destination": ".claude/skills/go-admin-dashboard-builder/references/runtime-lifecycle.md",
+    "sha256": "84d8a849a30ca246a5356c8749188b0a708de6c4e005e4b745a6592fd03b33ca",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-dashboard-builder/references/widgets-and-contracts.md",
+    "destination": ".agents/skills/go-admin-dashboard-builder/references/widgets-and-contracts.md",
+    "sha256": "ff4f0b7c40921fbe5c5be895da72da7a1b229232bd9b6ea19842ba2a38596c15",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-dashboard-builder/references/widgets-and-contracts.md",
+    "destination": ".claude/skills/go-admin-dashboard-builder/references/widgets-and-contracts.md",
+    "sha256": "ff4f0b7c40921fbe5c5be895da72da7a1b229232bd9b6ea19842ba2a38596c15",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-theme-builder/SKILL.md",
+    "destination": ".agents/skills/go-admin-theme-builder/SKILL.md",
+    "sha256": "d19e118d64d27947c9c67bd2d466e2ebaa8b042f8a53aa329d3b3c765a4e13b2",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-theme-builder/SKILL.md",
+    "destination": ".claude/skills/go-admin-theme-builder/SKILL.md",
+    "sha256": "d19e118d64d27947c9c67bd2d466e2ebaa8b042f8a53aa329d3b3c765a4e13b2",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-theme-builder/agents/openai.yaml",
+    "destination": ".agents/skills/go-admin-theme-builder/agents/openai.yaml",
+    "sha256": "77e000de06b315401f7931342392e6bf8f6d241c9331d7e30d9265fce4c6bc57",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-theme-builder/agents/openai.yaml",
+    "destination": ".claude/skills/go-admin-theme-builder/agents/openai.yaml",
+    "sha256": "77e000de06b315401f7931342392e6bf8f6d241c9331d7e30d9265fce4c6bc57",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-theme-builder/references/figma-intake.md",
+    "destination": ".agents/skills/go-admin-theme-builder/references/figma-intake.md",
+    "sha256": "cb4a115647c12c1533e0ea59a10d406243e9c79f21e7b5925252c9b04d7c5407",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-theme-builder/references/figma-intake.md",
+    "destination": ".claude/skills/go-admin-theme-builder/references/figma-intake.md",
+    "sha256": "cb4a115647c12c1533e0ea59a10d406243e9c79f21e7b5925252c9b04d7c5407",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-theme-builder/references/go-admin-theme-contract.md",
+    "destination": ".agents/skills/go-admin-theme-builder/references/go-admin-theme-contract.md",
+    "sha256": "1b2956d30d07af14369ec65c6f845df6ec11c903333e1edd692c5a876d324700",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-theme-builder/references/go-admin-theme-contract.md",
+    "destination": ".claude/skills/go-admin-theme-builder/references/go-admin-theme-contract.md",
+    "sha256": "1b2956d30d07af14369ec65c6f845df6ec11c903333e1edd692c5a876d324700",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-theme-builder/references/implementation-router.md",
+    "destination": ".agents/skills/go-admin-theme-builder/references/implementation-router.md",
+    "sha256": "f82ef1f6c2264cb87f6d6a3f137e280a678991d1d180b916ae35140a34cae44c",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-theme-builder/references/implementation-router.md",
+    "destination": ".claude/skills/go-admin-theme-builder/references/implementation-router.md",
+    "sha256": "f82ef1f6c2264cb87f6d6a3f137e280a678991d1d180b916ae35140a34cae44c",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-theme-builder/references/parity-validation.md",
+    "destination": ".agents/skills/go-admin-theme-builder/references/parity-validation.md",
+    "sha256": "a90b81ee02df84dcc056b89ea10239dd8332bb2954afe3320da89fcfa2c495c0",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-theme-builder/references/parity-validation.md",
+    "destination": ".claude/skills/go-admin-theme-builder/references/parity-validation.md",
+    "sha256": "a90b81ee02df84dcc056b89ea10239dd8332bb2954afe3320da89fcfa2c495c0",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-theme-builder/references/troubleshooting.md",
+    "destination": ".agents/skills/go-admin-theme-builder/references/troubleshooting.md",
+    "sha256": "e6d73a8ee4c75a64111cff5dc1c93a76aac2481ac04039f663a9daa34a371bf2",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-theme-builder/references/troubleshooting.md",
+    "destination": ".claude/skills/go-admin-theme-builder/references/troubleshooting.md",
+    "sha256": "e6d73a8ee4c75a64111cff5dc1c93a76aac2481ac04039f663a9daa34a371bf2",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-admin-theme-builder/scripts/audit_go_admin_theme.sh",
+    "destination": ".agents/skills/go-admin-theme-builder/scripts/audit_go_admin_theme.sh",
+    "sha256": "d7e3758551672e5e3c7ced10b8792df26ef438ad8ae3dfeeab31359768120ee0",
+    "executable": true
+  },
+  {
+    "source": "config/agents/skills/go-admin-theme-builder/scripts/audit_go_admin_theme.sh",
+    "destination": ".claude/skills/go-admin-theme-builder/scripts/audit_go_admin_theme.sh",
+    "sha256": "d7e3758551672e5e3c7ced10b8792df26ef438ad8ae3dfeeab31359768120ee0",
+    "executable": true
+  },
+  {
+    "source": "config/agents/skills/go-admin-theme-builder/scripts/audit_go_admin_theme_test.sh",
+    "destination": ".agents/skills/go-admin-theme-builder/scripts/audit_go_admin_theme_test.sh",
+    "sha256": "f7a0e425b3339827b00dffef072dcede76fda831827e06a0ef032fb75c39e170",
+    "executable": true
+  },
+  {
+    "source": "config/agents/skills/go-admin-theme-builder/scripts/audit_go_admin_theme_test.sh",
+    "destination": ".claude/skills/go-admin-theme-builder/scripts/audit_go_admin_theme_test.sh",
+    "sha256": "f7a0e425b3339827b00dffef072dcede76fda831827e06a0ef032fb75c39e170",
+    "executable": true
+  },
+  {
+    "source": "config/agents/skills/go-admin-theme-builder/scripts/validate_go_module_artifact.sh",
+    "destination": ".agents/skills/go-admin-theme-builder/scripts/validate_go_module_artifact.sh",
+    "sha256": "a432aa6b4a4d27316a20819e84c1453b0de2f2358cc798a656d4e906bd8c6924",
+    "executable": true
+  },
+  {
+    "source": "config/agents/skills/go-admin-theme-builder/scripts/validate_go_module_artifact.sh",
+    "destination": ".claude/skills/go-admin-theme-builder/scripts/validate_go_module_artifact.sh",
+    "sha256": "a432aa6b4a4d27316a20819e84c1453b0de2f2358cc798a656d4e906bd8c6924",
+    "executable": true
+  },
+  {
+    "source": "config/agents/skills/go-admin-theme-builder/scripts/validate_go_module_artifact_test.sh",
+    "destination": ".agents/skills/go-admin-theme-builder/scripts/validate_go_module_artifact_test.sh",
+    "sha256": "35778c70592186963a4ca13e1acd89c8841e3bba749613445f400f80fe350576",
+    "executable": true
+  },
+  {
+    "source": "config/agents/skills/go-admin-theme-builder/scripts/validate_go_module_artifact_test.sh",
+    "destination": ".claude/skills/go-admin-theme-builder/scripts/validate_go_module_artifact_test.sh",
+    "sha256": "35778c70592186963a4ca13e1acd89c8841e3bba749613445f400f80fe350576",
+    "executable": true
+  },
+  {
+    "source": "config/agents/skills/go-errors-migrate/SKILL.md",
+    "destination": ".agents/skills/go-errors-migrate/SKILL.md",
+    "sha256": "20400d0c8b91058b3ce43754085f149256f1ac970a35cab52a8b3e6f1c17db46",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-errors-migrate/SKILL.md",
+    "destination": ".claude/skills/go-errors-migrate/SKILL.md",
+    "sha256": "20400d0c8b91058b3ce43754085f149256f1ac970a35cab52a8b3e6f1c17db46",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-errors-migrate/agents/openai.yaml",
+    "destination": ".agents/skills/go-errors-migrate/agents/openai.yaml",
+    "sha256": "c4b55079e47aaab45bfbff8f01cdb91512ea981ee4aa2f26ebdf5c6842c31c90",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-errors-migrate/agents/openai.yaml",
+    "destination": ".claude/skills/go-errors-migrate/agents/openai.yaml",
+    "sha256": "c4b55079e47aaab45bfbff8f01cdb91512ea981ee4aa2f26ebdf5c6842c31c90",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-errors-migrate/references/compatibility-tests.md",
+    "destination": ".agents/skills/go-errors-migrate/references/compatibility-tests.md",
+    "sha256": "997a3e1bd15e815289f6f85b5adbc0760710e238c396eb165f927896769572a8",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-errors-migrate/references/compatibility-tests.md",
+    "destination": ".claude/skills/go-errors-migrate/references/compatibility-tests.md",
+    "sha256": "997a3e1bd15e815289f6f85b5adbc0760710e238c396eb165f927896769572a8",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-errors-migrate/references/current-caveats.md",
+    "destination": ".agents/skills/go-errors-migrate/references/current-caveats.md",
+    "sha256": "03084b7e896c54e835afaee51e85ddf9258a888a960a48100c69cfdb3b586db3",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-errors-migrate/references/current-caveats.md",
+    "destination": ".claude/skills/go-errors-migrate/references/current-caveats.md",
+    "sha256": "03084b7e896c54e835afaee51e85ddf9258a888a960a48100c69cfdb3b586db3",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-errors-migrate/references/custom-mappers.md",
+    "destination": ".agents/skills/go-errors-migrate/references/custom-mappers.md",
+    "sha256": "8212e3ba0251ea2dbbfe6203441e6809110b65b1bc4e6c99a6ddffc8094605c5",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-errors-migrate/references/custom-mappers.md",
+    "destination": ".claude/skills/go-errors-migrate/references/custom-mappers.md",
+    "sha256": "8212e3ba0251ea2dbbfe6203441e6809110b65b1bc4e6c99a6ddffc8094605c5",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-errors-migrate/references/migration-checklist.md",
+    "destination": ".agents/skills/go-errors-migrate/references/migration-checklist.md",
+    "sha256": "da0a77711d699a8c4ca55a256ee91aab3b08370074d8527535fe051b2273c907",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-errors-migrate/references/migration-checklist.md",
+    "destination": ".claude/skills/go-errors-migrate/references/migration-checklist.md",
+    "sha256": "da0a77711d699a8c4ca55a256ee91aab3b08370074d8527535fe051b2273c907",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-errors-use/SKILL.md",
+    "destination": ".agents/skills/go-errors-use/SKILL.md",
+    "sha256": "a3959bf742044679d1439576403a1a287e7ecea378449a384c7e365218590974",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-errors-use/SKILL.md",
+    "destination": ".claude/skills/go-errors-use/SKILL.md",
+    "sha256": "a3959bf742044679d1439576403a1a287e7ecea378449a384c7e365218590974",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-errors-use/agents/openai.yaml",
+    "destination": ".agents/skills/go-errors-use/agents/openai.yaml",
+    "sha256": "b02538958a0adfe39c68693658315cc874392499558f03412c38b1fcb8386b97",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-errors-use/agents/openai.yaml",
+    "destination": ".claude/skills/go-errors-use/agents/openai.yaml",
+    "sha256": "b02538958a0adfe39c68693658315cc874392499558f03412c38b1fcb8386b97",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-errors-use/references/api-patterns.md",
+    "destination": ".agents/skills/go-errors-use/references/api-patterns.md",
+    "sha256": "362b1f9a0c64ce082af0ab79080ac830760c530a990d2c792a0623412175359a",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-errors-use/references/api-patterns.md",
+    "destination": ".claude/skills/go-errors-use/references/api-patterns.md",
+    "sha256": "362b1f9a0c64ce082af0ab79080ac830760c530a990d2c792a0623412175359a",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-errors-use/references/current-caveats.md",
+    "destination": ".agents/skills/go-errors-use/references/current-caveats.md",
+    "sha256": "03084b7e896c54e835afaee51e85ddf9258a888a960a48100c69cfdb3b586db3",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/go-errors-use/references/current-caveats.md",
+    "destination": ".claude/skills/go-errors-use/references/current-caveats.md",
+    "sha256": "03084b7e896c54e835afaee51e85ddf9258a888a960a48100c69cfdb3b586db3",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/structure-application-commands/SKILL.md",
+    "destination": ".agents/skills/structure-application-commands/SKILL.md",
+    "sha256": "196ac0427f7f765e6219afe4ee8281a9630388df1f5ef574e62b73f034228b50",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/structure-application-commands/SKILL.md",
+    "destination": ".claude/skills/structure-application-commands/SKILL.md",
+    "sha256": "196ac0427f7f765e6219afe4ee8281a9630388df1f5ef574e62b73f034228b50",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/structure-application-commands/agents/openai.yaml",
+    "destination": ".agents/skills/structure-application-commands/agents/openai.yaml",
+    "sha256": "a5f31cd234fefbe8fe38f4cadca4e2dc755bb186964a1b55d62a35eda40f88c0",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/structure-application-commands/agents/openai.yaml",
+    "destination": ".claude/skills/structure-application-commands/agents/openai.yaml",
+    "sha256": "a5f31cd234fefbe8fe38f4cadca4e2dc755bb186964a1b55d62a35eda40f88c0",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/webcap-agent/SKILL.md",
+    "destination": ".agents/skills/webcap-agent/SKILL.md",
+    "sha256": "53ee679d42aa0675d3838a3ec86dc439e042fa7acb27538857dbb4a6d6463871",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/webcap-agent/SKILL.md",
+    "destination": ".claude/skills/webcap-agent/SKILL.md",
+    "sha256": "53ee679d42aa0675d3838a3ec86dc439e042fa7acb27538857dbb4a6d6463871",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/webcap-agent/references/cli.md",
+    "destination": ".agents/skills/webcap-agent/references/cli.md",
+    "sha256": "9e874c941f200efb960eccbaf64ba9235328867142a1d552e87a799be937ba47",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/webcap-agent/references/cli.md",
+    "destination": ".claude/skills/webcap-agent/references/cli.md",
+    "sha256": "9e874c941f200efb960eccbaf64ba9235328867142a1d552e87a799be937ba47",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/webcap-agent/references/visual-review.md",
+    "destination": ".agents/skills/webcap-agent/references/visual-review.md",
+    "sha256": "6b6620adc276caec8073fa2b4576e0c43cb984d801762a1e78ba83ba3f7f538e",
+    "executable": false
+  },
+  {
+    "source": "config/agents/skills/webcap-agent/references/visual-review.md",
+    "destination": ".claude/skills/webcap-agent/references/visual-review.md",
+    "sha256": "6b6620adc276caec8073fa2b4576e0c43cb984d801762a1e78ba83ba3f7f538e",
+    "executable": false
+  }
+]

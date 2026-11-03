@@ -1,0 +1,3 @@
+# Portable preferences captured from the source Mac.
+model = "gpt-6-astra"
+model_reasoning_effort = "xhigh"

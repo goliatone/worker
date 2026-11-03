@@ -56,6 +56,8 @@ elif name == 'brew':
             sys.exit(12 if os.environ.get('WORKER_TEST_FAIL_DESKFLOW') else 0)
         if any(arg.endswith('/Brewfile.ai') for arg in args):
             sys.exit(12 if os.environ.get('WORKER_TEST_FAIL_AI') else 0)
+        if any(arg.endswith('/Brewfile.' + os.environ.get('WORKER_TEST_FAIL_BUNDLE', 'missing')) for arg in args):
+            sys.exit(12)
         sys.exit(12 if os.environ.get('WORKER_TEST_FAIL_BREW') else 0)
     else:
         assert args == ['analytics', 'off'], args
@@ -63,6 +65,8 @@ elif name == 'git':
     if args[:2] == ['config', '--file']:
         # Exercise Git's real parser/locking only against this test's fixtures.
         Path(args[2]).resolve().relative_to(state.parent.resolve())
+        if args[-2:] == ['--no-includes', '--list']:
+            sys.exit(subprocess.run(['/usr/bin/git', *args]).returncode)
         assert '--no-includes' in args and '--fixed-value' in args
         assert '--get-all' in args or '--unset-all' in args
         if '--unset-all' in args and os.environ.get('WORKER_TEST_FAIL_GIT_REPAIR'):
@@ -124,21 +128,37 @@ elif name == 'go':
         assert os.environ.get('GOOS') == 'darwin'
         assert os.environ.get('GOARCH') == ('amd64' if os.environ.get('WORKER_TEST_ARCH') == 'x86_64' else 'arm64')
         package = args[1]
+        if package == os.environ.get('WORKER_TEST_FAIL_GO_INSTALL'):
+            sys.exit(19)
         binary = package.split('@')[0].split('/')[-1]
         dest = Path(os.environ['GOBIN']) / binary
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_text(package); dest.chmod(0o700)
+    elif args[0] == 'build':
+        assert os.environ['GOOS'] == 'darwin'
+        assert os.environ['GOWORK'] == 'off'
+        module = Path('go.mod').read_text().splitlines()[0].split()[1]
+        if module == os.environ.get('WORKER_TEST_FAIL_GO_BUILD'):
+            sys.exit(19)
+        package = module + (args[-1][1:] if args[-1] != '.' else '')
+        dest = Path(args[args.index('-o') + 1])
+        dest.write_text(package + '@(devel)'); dest.chmod(0o700)
     else:
         raise AssertionError(args)
 elif name == 'gh':
     if os.environ.get('WORKER_TEST_PUBLIC_GIT'):
         assert os.environ.get('GIT_CONFIG_GLOBAL') == os.environ['WORKER_TEST_GIT_CONFIG']
-    if args == ['auth', 'status']:
+    if args[:2] == ['auth', 'status']:
         sys.exit(1 if os.environ.get('WORKER_TEST_NO_AUTH') else 0)
     elif args == ['extension', 'list']:
         print('gh dash dlvhdr/gh-dash v4.0.0' if load('gh-dash') else '')
     elif args[:2] == ['extension', 'install']:
         save('gh-dash', True)
+    elif args[0] == 'api' and '/tarball/' in args[1]:
+        repo = args[1].split('/')[2]
+        if repo == os.environ.get('WORKER_TEST_FAIL_ARCHIVE'):
+            sys.exit(22)
+        sys.stdout.buffer.write((Path(os.environ['WORKER_TEST_ARCHIVES']) / (repo + '.tar.gz')).read_bytes())
     else:
         raise AssertionError(args)
 elif name == 'code-insiders':
@@ -175,6 +195,16 @@ elif name == 'defaults':
             print('defaults: simulated write failure', file=sys.stderr)
             sys.exit(23)
         preferences[key] = value; save('preferences', preferences)
+    else:
+        raise AssertionError(args)
+elif name == 'curl' and '--url' in args:
+    url = args[args.index('--url') + 1]
+    if os.environ.get('WORKER_TEST_FAIL_CURL'):
+        sys.exit(22)
+    if url.startswith('https://api.github.com/gists/'):
+        sys.stdout.write(Path(os.environ['WORKER_TEST_GIST']).read_text())
+    elif url.startswith('https://codeload.github.com/voidint/g/tar.gz/'):
+        Path(args[args.index('-o') + 1]).write_bytes((Path(os.environ['WORKER_TEST_ARCHIVES']) / 'g.tar.gz').read_bytes())
     else:
         raise AssertionError(args)
 elif name == 'curl' and os.environ.get('WORKER_TEST_DOWNLOAD'):

@@ -1,0 +1,7 @@
+# Versions observed on the source workstation; project-local pins take precedence.
+mockgen go.uber.org/mock/mockgen@v0.4.0
+gqlgen github.com/99designs/gqlgen@v0.17.81
+swag github.com/swaggo/swag/cmd/swag@v1.16.1
+goi18n github.com/nicksnyder/go-i18n/v2/goi18n@v2.2.1
+gosec github.com/securego/gosec/v2/cmd/gosec@v2.29.1-0.20261015133444-707f2271f665
+actionlint github.com/rhysd/actionlint/cmd/actionlint@v1.7.11

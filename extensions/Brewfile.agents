@@ -1,0 +1,4 @@
+# CLI clients; auth, plugins, and desktop account state are configured separately.
+cask "codex"
+cask "claude-code"
+cask "cursor-cli"

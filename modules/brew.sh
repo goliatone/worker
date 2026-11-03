@@ -3,6 +3,7 @@
 
 setup_brew() {
   local installer installed_prefix manifest macos_version macos_major
+  local bundle selected
   local manifests=("$ROOT/extensions/Brewfile")
   if [[ ${WITH_DESKFLOW:-0} == 1 ]]; then
     manifests+=("$ROOT/extensions/Brewfile.deskflow")
@@ -10,6 +11,10 @@ setup_brew() {
   if [[ ${WITH_AI:-0} == 1 ]]; then
     manifests+=("$ROOT/extensions/Brewfile.ai")
   fi
+  for bundle in workflow agents backend access desktop; do
+    selected=WITH_$(printf '%s' "$bundle" | tr '[:lower:]' '[:upper:]')
+    if [[ ${!selected:-0} == 1 ]]; then manifests+=("$ROOT/extensions/Brewfile.$bundle"); fi
+  done
   for manifest in "${manifests[@]}"; do
     [[ -f "$manifest" && -r "$manifest" ]] || die "Missing or unreadable Brewfile: $manifest"
   done
@@ -21,6 +26,23 @@ setup_brew() {
       ''|*[!0-9]*) die "Could not determine the macOS version: $macos_version" ;;
     esac
     [[ $macos_major -ge 14 ]] || die "--with-ai requires macOS 14 or later (Ollama requirement); found $macos_version."
+  fi
+  if [[ ${WITH_DESKTOP:-0} == 1 || ${WITH_ACCESS:-0} == 1 ]]; then
+    macos_version=$(sw_vers -productVersion)
+    macos_major=${macos_version%%.*}
+    case "$macos_major" in ''|*[!0-9]*) die "Could not determine the macOS version: $macos_version" ;; esac
+    if [[ ${WITH_DESKTOP:-0} == 1 ]]; then
+      [[ $macos_major -ge 14 ]] || die '--with-desktop requires macOS 14 or later.'
+    else
+      [[ $macos_major -ge 13 ]] || die '--with-access requires macOS 13 or later.'
+    fi
+  fi
+  if [[ ${WITH_WORKFLOW:-0} == 1 ]]; then
+    [[ -r "$ROOT/extensions/go-workflow-tools.txt" ]] || die 'Missing Go workflow tool manifest.'
+    [[ -r "$ROOT/extensions/custom-workflow-tools.json" ]] || die 'Missing custom workflow tool manifest.'
+  fi
+  if [[ ${WITH_AGENTS:-0} == 1 ]]; then
+    [[ -r "$ROOT/extensions/agent-files.json" ]] || die 'Missing agent file manifest.'
   fi
   log 'Homebrew and core packages'
   if [[ $DRY_RUN == 1 ]]; then
@@ -79,4 +101,19 @@ setup_brew() {
     run "$BREW_BIN" bundle install --no-upgrade --file="$ROOT/extensions/Brewfile.ai"
     log '  Open the apps when ready to complete first-run setup and select models. Worker does not launch them or download models.'
   fi
+  for bundle in workflow agents backend access desktop; do
+    selected=WITH_$(printf '%s' "$bundle" | tr '[:lower:]' '[:upper:]')
+    if [[ ${!selected:-0} == 1 ]]; then
+      log "Optional bundle: $bundle"
+      run "$BREW_BIN" bundle install --no-upgrade --file="$ROOT/extensions/Brewfile.$bundle"
+    fi
+  done
+  if [[ ${WITH_BACKEND:-0} == 1 ]]; then
+    log '  Services are not started. PostgreSQL may create its initial empty cluster during package installation; existing data is not migrated.'
+    log '  Run mkcert -install and sign in to LocalStack/ngrok only when needed. No trust roots or tunnels are configured by worker.'
+  fi
+  if [[ ${WITH_ACCESS:-0} == 1 ]]; then
+    log '  Complete 1Password and Tailscale sign-in and permissions manually. Vendor package installers may register background components.'
+  fi
+
 }

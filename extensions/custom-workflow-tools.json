@@ -1,0 +1,36 @@
+[
+  {
+    "name": "ctx",
+    "repo": "goliatone/ctx",
+    "revision": "48ce8f603ccba4c9bd4f5e95d3fc19ad92783e12",
+    "private": true,
+    "package": "./cmd/ctx",
+    "go_path": "github.com/goliatone/ctx/cmd/ctx",
+    "destination": "go/bin/ctx",
+    "assets": {
+      "internal/ctxassets/defaults/assets/zsh/_ctx": ".zsh/completions/_ctx"
+    }
+  },
+  {
+    "name": "gengql",
+    "repo": "goliatone/go-gql-gen",
+    "revision": "f2e1dc24a732edb525100fa5e88c2e18046e71af",
+    "private": true,
+    "package": "./cmd/gql-gen",
+    "go_path": "github.com/goliatone/go-gql-gen/cmd/gql-gen",
+    "destination": "bin/gengql",
+    "assets": {},
+    "source_branch": "auto/go-errors-v0.9.0"
+  },
+  {
+    "name": "g",
+    "repo": "voidint/g",
+    "revision": "a82e89cc63f80841af60736f8dc159fe093fcfc2",
+    "release": "v1.8.0",
+    "private": false,
+    "package": ".",
+    "go_path": "github.com/voidint/g",
+    "destination": "bin/g",
+    "assets": {}
+  }
+]

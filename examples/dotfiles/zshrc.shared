@@ -1,0 +1,2 @@
+# Shared aliases/functions, loaded before ~/.zshrc.local.
+alias croot='cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"'

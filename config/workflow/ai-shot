@@ -1,0 +1,282 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'USAGE'
+Usage:
+  ai-shot [md|sm|xs] [options] image1 [image2 ...]
+  ai-shot --size md image1.png image2.jpg
+
+Presets:
+  md  1440px wide, split long pages into chunks up to 2600px tall
+  sm  1024px wide, split long pages into chunks up to 2000px tall
+  xs   768px wide, split long pages into chunks up to 1400px tall
+
+Options:
+  -s, --size SIZE      md, sm, or xs. Default: md
+  -o, --out DIR        Output directory. Default: same directory as input
+  -f, --format FORMAT  png, jpg, jpeg, or webp. Default: png
+      --single         Force one image that fits inside the preset box.
+                       Good for overview, but text may become small on very tall pages.
+      --overview       For tall pages, also create one whole-page overview image.
+  -h, --help           Show this help.
+
+Examples:
+  ai-shot md ~/Desktop/full-page.png
+  ai-shot sm ~/Desktop/*.png
+  ai-shot xs --out ./ai-ready screenshot1.png screenshot2.png
+  ai-shot md --overview long-page.png
+USAGE
+}
+
+err() {
+  printf 'ai-shot: %s\n' "$*" >&2
+}
+
+if command -v magick >/dev/null 2>&1; then
+  IM=(magick)
+  IDENTIFY=(magick identify)
+elif command -v convert >/dev/null 2>&1 && command -v identify >/dev/null 2>&1; then
+  IM=(convert)
+  IDENTIFY=(identify)
+else
+  err "ImageMagick is required. On macOS: brew install imagemagick"
+  exit 1
+fi
+
+SIZE="md"
+OUTDIR=""
+FORMAT="png"
+MODE="split"
+OVERVIEW=0
+FILES=()
+
+while (($#)); do
+  case "$1" in
+    md|sm|xs)
+      SIZE="$1"
+      shift
+      ;;
+    -s|--size)
+      [[ $# -ge 2 ]] || { err "missing value for $1"; exit 2; }
+      SIZE="$2"
+      shift 2
+      ;;
+    -o|--out)
+      [[ $# -ge 2 ]] || { err "missing value for $1"; exit 2; }
+      OUTDIR="$2"
+      shift 2
+      ;;
+    -f|--format)
+      [[ $# -ge 2 ]] || { err "missing value for $1"; exit 2; }
+      FORMAT="$2"
+      shift 2
+      ;;
+    --single|--no-split)
+      MODE="single"
+      shift
+      ;;
+    --overview)
+      OVERVIEW=1
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      while (($#)); do
+        FILES+=("$1")
+        shift
+      done
+      ;;
+    -*)
+      err "unknown option: $1"
+      usage
+      exit 2
+      ;;
+    *)
+      FILES+=("$1")
+      shift
+      ;;
+  esac
+done
+
+case "$SIZE" in
+  md) TARGET_W=1440; CHUNK_H=2600 ;;
+  sm) TARGET_W=1024; CHUNK_H=2000 ;;
+  xs) TARGET_W=768;  CHUNK_H=1400 ;;
+  *) err "size must be md, sm, or xs"; exit 2 ;;
+esac
+
+case "$FORMAT" in
+  png) EXT="png" ;;
+  jpg|jpeg) EXT="jpg" ;;
+  webp) EXT="webp" ;;
+  *) err "format must be png, jpg, jpeg, or webp"; exit 2 ;;
+esac
+
+if ((${#FILES[@]} == 0)); then
+  usage
+  exit 2
+fi
+
+TMPROOT=$(mktemp -d "${TMPDIR:-/tmp}/ai-shot.XXXXXX")
+
+# shellcheck disable=SC2329 # Invoked by the EXIT trap below.
+cleanup() {
+  rm -rf "$TMPROOT"
+}
+
+trap cleanup EXIT
+
+write_image() {
+  local src="$1"
+  local dst="$2"
+
+  case "$EXT" in
+    png)
+      "${IM[@]}" "$src" \
+        -strip \
+        -define png:compression-level=9 \
+        "$dst"
+      ;;
+    jpg)
+      "${IM[@]}" "$src" \
+        -background white \
+        -alpha remove \
+        -alpha off \
+        -strip \
+        -quality 90 \
+        "$dst"
+      ;;
+    webp)
+      "${IM[@]}" "$src" \
+        -strip \
+        -quality 90 \
+        "$dst"
+      ;;
+  esac
+}
+
+process_one() {
+  local input="$1"
+  local idx="$2"
+
+  if [[ ! -f "$input" ]]; then
+    err "not a file: $input"
+    return 1
+  fi
+
+  local dir name stem outdir tmp rw rh out pattern tiles last
+
+  dir=$(dirname -- "$input")
+  name=$(basename -- "$input")
+
+  if [[ "$name" == *.* && "$name" != .* ]]; then
+    stem="${name%.*}"
+  else
+    stem="$name"
+  fi
+
+  outdir="${OUTDIR:-$dir}"
+  mkdir -p -- "$outdir"
+
+  if [[ "$MODE" == "single" ]]; then
+    out="$outdir/${stem}_${SIZE}.${EXT}"
+    tmp="$TMPROOT/${idx}_single.png"
+
+    "${IM[@]}" "$input" \
+      -auto-orient \
+      -resize "${TARGET_W}x${CHUNK_H}>" \
+      -strip \
+      "$tmp"
+
+    write_image "$tmp" "$out"
+    printf 'created %s\n' "$out"
+    return 0
+  fi
+
+  tmp="$TMPROOT/${idx}_resized.png"
+
+  "${IM[@]}" "$input" \
+    -auto-orient \
+    -resize "${TARGET_W}x>" \
+    -strip \
+    "$tmp"
+
+  read -r rw rh < <("${IDENTIFY[@]}" -format '%w %h' "$tmp")
+
+  if (( rh <= CHUNK_H )); then
+    out="$outdir/${stem}_${SIZE}.${EXT}"
+    write_image "$tmp" "$out"
+    printf 'created %s\n' "$out"
+  else
+    if (( OVERVIEW == 1 )); then
+      local overview_tmp overview_out
+
+      overview_tmp="$TMPROOT/${idx}_overview.png"
+      overview_out="$outdir/${stem}_${SIZE}_overview.${EXT}"
+
+      "${IM[@]}" "$input" \
+        -auto-orient \
+        -resize "${TARGET_W}x${CHUNK_H}>" \
+        -strip \
+        "$overview_tmp"
+
+      write_image "$overview_tmp" "$overview_out"
+      printf 'created %s\n' "$overview_out"
+    fi
+
+    tiles=$(( (rh + CHUNK_H - 1) / CHUNK_H ))
+    last=$(printf '%02d' "$tiles")
+    pattern="$outdir/${stem}_${SIZE}_%02d.${EXT}"
+
+    case "$EXT" in
+      png)
+        "${IM[@]}" "$tmp" \
+          -crop "${rw}x${CHUNK_H}" \
+          +repage \
+          -strip \
+          -define png:compression-level=9 \
+          -scene 1 \
+          "$pattern"
+        ;;
+      jpg)
+        "${IM[@]}" "$tmp" \
+          -crop "${rw}x${CHUNK_H}" \
+          +repage \
+          -background white \
+          -alpha remove \
+          -alpha off \
+          -strip \
+          -quality 90 \
+          -scene 1 \
+          "$pattern"
+        ;;
+      webp)
+        "${IM[@]}" "$tmp" \
+          -crop "${rw}x${CHUNK_H}" \
+          +repage \
+          -strip \
+          -quality 90 \
+          -scene 1 \
+          "$pattern"
+        ;;
+    esac
+
+    printf 'created %s through %s (%d chunks)\n' \
+      "$outdir/${stem}_${SIZE}_01.${EXT}" \
+      "$outdir/${stem}_${SIZE}_${last}.${EXT}" \
+      "$tiles"
+  fi
+}
+
+status=0
+
+for i in "${!FILES[@]}"; do
+  process_one "${FILES[$i]}" "$i" || status=1
+done
+
+exit "$status"

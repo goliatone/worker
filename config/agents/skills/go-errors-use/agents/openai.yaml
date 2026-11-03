@@ -1,0 +1,4 @@
+interface:
+  display_name: "Go Errors Use"
+  short_description: "Use go-errors in Go projects"
+  default_prompt: "Use $go-errors-use to add structured go-errors handling to this Go project."

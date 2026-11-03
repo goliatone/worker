@@ -1,0 +1,7 @@
+cask_args appdir: "/Applications"
+cask "raycast"
+cask "rectangle"
+cask "bruno"
+cask "postico"
+cask "dbeaver-community"
+cask "font-bitstream-vera-sans-mono-nerd-font"
