@@ -1,4 +1,7 @@
 .DS_Store
 Thumbs.db
-
-*.lock
+worker.local
+Brewfile.local
+*.local
+__pycache__/
+*.pyc

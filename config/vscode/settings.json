@@ -1,0 +1,174 @@
+{
+  "files.associations": {
+    ".envset": "ini",
+    "*.ejs": "html"
+  },
+  "rest-client.enableTelemetry": false,
+  "javascript.updateImportsOnFileMove.enabled": "always",
+  "markdown-preview-enhanced.liveUpdate": false,
+  "breadcrumbs.enabled": true,
+  "editor.minimap.enabled": false,
+  "[ejs]": {},
+  "[json]": {
+    "editor.tabSize": 4,
+    "editor.detectIndentation": false,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[c]": {
+    "editor.defaultFormatter": "xaver.clang-format"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[graphql]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[sql]": {
+    "editor.defaultFormatter": "inferrinizzard.prettier-sql-vscode"
+  },
+  "spellchecker.ignoreWordsList": [
+    "metadata",
+    "dotenv",
+    "OAuth",
+    "timestamp",
+    "envset",
+    "Upsert",
+    "uuid",
+    "json",
+    "WASM",
+    "Plugin",
+    "Plugins",
+    "plugin",
+    "TinyGo",
+    "JSON",
+    "tinyjson",
+    "config",
+    "cron",
+    "Metadata",
+    "MyCorp",
+    "Facebook",
+    "Refactor",
+    "refactor",
+    "disptacher",
+    "auth",
+    "graphql",
+    "redis",
+    "i18n",
+    "Auth0",
+    "GraphQL",
+    "GitHub",
+    "Weviate",
+    "ChatGPT",
+    "weviate",
+    "auth0",
+    "namespace",
+    "hashid",
+    "struct",
+    "garcia",
+    "marc",
+    "structs",
+    "Config",
+    "filesystems",
+    "filesystem",
+    "CompFS",
+    "Filesystem",
+    "middleware",
+    "CSRF",
+    "fallbacks",
+    "composable",
+    "refactored"
+  ],
+  "editor.accessibilitySupport": "off",
+  "redhat.telemetry.enabled": false,
+  "svelte.enable-ts-plugin": true,
+  "security.workspace.trust.untrustedFiles": "open",
+  "files.trimTrailingWhitespace": true,
+  "workbench.panel.defaultLocation": "right",
+  "files.insertFinalNewline": true,
+  "telemetry.telemetryLevel": "off",
+  "terminal.integrated.enableMultiLinePasteWarning": "never",
+  "go.editorContextMenuCommands": {
+    "fillStruct": true,
+    "generateTestForFile": true,
+    "generateTestForPackage": true
+  },
+  "go.toolsManagement.autoUpdate": true,
+  "go.formatTool": "gofmt",
+  "go.languageServerFlags": [],
+  "go.toolsEnvVars": {},
+  "go.lintTool": "golangci-lint-v2",
+  "go.lintFlags": [
+    "--fast-only"
+  ],
+  "window.zoomLevel": 1,
+  "D2.execPath": "d2",
+  "D2.updateOnSave": true,
+  "aws.telemetry": false,
+  "html.format.templating": true,
+  "explorer.fileNesting.patterns": {
+    "*.ts": "${capture}.js",
+    "*.js": "${capture}.js.map, ${capture}.min.js, ${capture}.d.ts",
+    "*.jsx": "${capture}.js",
+    "*.tsx": "${capture}.ts",
+    "tsconfig.json": "tsconfig.*.json",
+    "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, bun.lock",
+    "*.sqlite": "${capture}.${extname}-*",
+    "*.db": "${capture}.${extname}-*",
+    "*.sqlite3": "${capture}.${extname}-*",
+    "*.db3": "${capture}.${extname}-*",
+    "*.sdb": "${capture}.${extname}-*",
+    "*.s3db": "${capture}.${extname}-*"
+  },
+  "docker.extension.enableComposeLanguageServer": false,
+  "[dockercompose]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.autoIndent": "advanced",
+    "editor.quickSuggestions": {
+      "other": true,
+      "comments": false,
+      "strings": true
+    },
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+  "[github-actions-workflow]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+  "aws.cloudformation.telemetry.enabled": false,
+  "claudeCode.preferredLocation": "panel",
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "git.addAICoAuthor": "off",
+  "claudeCode.selectedModel": "claude-opus-4-5-20251101",
+  "claudeCode.environmentVariables": [],
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "yaml.disableSchemaDetection": [
+    "**/.github/workflows/*.yml",
+    "**/.github/workflows/*.yaml",
+    "**/.gitea/workflows/*.yml",
+    "**/.gitea/workflows/*.yaml",
+    "**/.forgejo/workflows/*.yml",
+    "**/.forgejo/workflows/*.yaml"
+  ]
+}

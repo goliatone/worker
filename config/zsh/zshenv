@@ -1,0 +1,10 @@
+# Core paths for interactive shells and editor tasks. Do not run installers here.
+typeset -U path
+if [[ -d /opt/homebrew/bin ]]; then
+  path=(/opt/homebrew/bin /opt/homebrew/sbin $path)
+elif [[ -d /usr/local/bin ]]; then
+  path=(/usr/local/bin /usr/local/sbin $path)
+fi
+path=("$HOME/bin" "$HOME/.local/bin" $path "$HOME/go/bin" "$HOME/.docker/bin")
+export PATH
+[[ ! -r "$HOME/.zshenv.local" ]] || source "$HOME/.zshenv.local"

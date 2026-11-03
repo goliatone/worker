@@ -1,0 +1,107 @@
+[user]
+	name = goliatone
+	email = 140582+goliatone@users.noreply.github.com
+[alias]
+	gol = log --graph --pretty=oneline --abbrev-commit --decorate
+	clog = log --graph --full-history --all --color --pretty=format:'%x1b[31m%h%x09%x1b[32m %C(white)- %d%x1b[0m%x20%s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --date=relative
+	ignored = ls-files --others -i --exclude-standard
+	ignoring = status --ignored -s
+  st = status
+  ci = commit -m
+  br = branch
+  co = checkout
+  unfuck = checkout
+  df = diff
+  idff = diff
+  lg = log -p
+	lol = log -15 --date=format:'%d/%m/%y %H:%M:%S' --pretty=format:'%ad %h %d %s'
+  lola = log --graph --decorate --pretty=oneline --abbrev-commit --all
+  unstage = reset HEAD
+  branches = branch -avv
+  put = push origin HEAD
+  rpo = remote prune origin
+  cob = !sh -c 'git co -b "$0"'
+  cor = !sh -c 'git co -t "$0"'
+  rmbr = !sh -c 'git branch -D "$0" && git push origin ":$0"'
+  smerge = merge --squash
+  dt = !sh -c 'git tag -d "$0" && git push origin :refs/tags/$0'
+  release-tag = !sh -c 'TAG=$0-`date +"%Y%m%d%H%M%S"` && echo "Creating Tag: $TAG" && git tag $TAG -am \"$1\" && git push --tags origin master'
+  ig = update-index --assume-unchanged
+  unig = update-index --no-assume-unchanged
+	alias = config --get-regexp 'alias.*'
+	serve = daemon --verbose --export-all --base-path=.git --reuseaddr --strict-paths .git/
+[push]
+	default = simple
+	autoSetupRemote = true
+[color]
+	ui = true
+[color "branch"]
+  current = yellow reverse
+  local = yellow
+  remote = green
+[color "diff"]
+	meta = 11
+	frag = magenta bold
+	old = red bold
+	new = green bold
+	commit = yellow bold
+	whitespace = red reverse
+[color "status"]
+  added = yellow
+  changed = green
+  untracked = cyan
+[core]
+  editor = nano
+  excludesfile = ~/.gitignore_global
+  # pager = diff-so-fancy | less --tabs=4 -RFX
+  # https://dandavison.github.io/delta/color-moved-support.html
+  pager = delta --diff-so-fancy
+[interactive]
+  diffFilter = delta --color-only --features=interactive
+[merge]
+  tool = vscode
+[diff]
+  tool = vscode
+  colorMoved = default
+  algorithm=histogram
+[difftool "vscode"]
+  cmd = code-insiders --wait --diff \"$LOCAL\" \"$REMOTE\"
+[mergetool "vscode"]
+  cmd = code-insiders --wait --merge \"$LOCAL\" \"$REMOTE\" \"$BASE\" \"$MERGED\"
+[help]
+# -1, 1 (0.1 sec), 10 (1 sec)
+	autocorrect = prompt
+[color "diff-highlight"]
+	oldNormal = red bold
+	oldHighlight = red bold 52
+	newNormal = green bold
+	newHighlight = green bold 22
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+[delta]
+  features = decorations
+  line-numbers = true
+  side-by-side = false
+[delta "interactive"]
+  keep-plus-minus-markers = false
+[delta "decorations"]
+  commit-decoration-style = blue ol
+  commit-style = raw
+  file-style = omit
+  hunk-header-decoration-style = blue box
+  hunk-header-file-style = red
+  hunk-header-line-number-style = "#067a00"
+  hunk-header-style = file line-number syntax
+[init]
+defaultBranch=main
+[url "git@github.com:"]
+	insteadOf = "https://github.com/"
+[pull]
+	rebase = true
+
+# Private or machine-specific overrides (never copied into this repository).
+[include]
+  path = ~/.gitconfig.local

@@ -1,0 +1,87 @@
+# Captured workstation preferences, with portable paths and optional tools guarded.
+export ZSH="$HOME/.oh-my-zsh"
+ZSH_THEME="wezm"
+plugins=(git docker colored-man-pages command-not-found colorize jump aws)
+zstyle ':omz:update' mode disabled # This snapshot uses an explicit framework revision.
+
+typeset -U path fpath
+[[ ! -d "$HOME/.zsh/completions" ]] || fpath=("$HOME/.zsh/completions" $fpath)
+if [[ -r "$ZSH/oh-my-zsh.sh" ]]; then
+  source "$ZSH/oh-my-zsh.sh"
+else
+  autoload -Uz compinit && compinit
+fi
+HISTDB_TABULATE_CMD=(sed -e $'s/\x1f/\t/g')
+[[ ! -r "$ZSH/custom/plugins/zsh-histdb/sqlite-history.zsh" ]] || source "$ZSH/custom/plugins/zsh-histdb/sqlite-history.zsh"
+
+# Retain integrations for optional apps, without requiring them for core setup.
+export PNPM_HOME="${PNPM_HOME:-$HOME/Library/pnpm}"
+# pnpm requires its global bin directory in PATH even before the first global add.
+path+=("$PNPM_HOME")
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+for worker_path in \
+  "$HOME/.cargo/bin" "$HOME/Development/GO/bin" "$HOME/.platformio/penv/bin" \
+  "$HOME/.rvm/bin" "$HOME/.cache/lm-studio/bin" "$HOME/.opencode/bin" \
+  "$HOME/.yarn/bin" "$HOME/.config/yarn/global/node_modules/.bin" \
+  "$ANDROID_HOME/emulator" "$ANDROID_HOME/platform-tools" \
+  "$HOME/.maestro/bin" /Applications/Sketch.app/Contents/MacOS; do
+  [[ ! -d "$worker_path" ]] || path+=("$worker_path")
+done
+unset worker_path
+if [[ -d /Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home ]]; then
+  export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home
+  path=("$JAVA_HOME/bin" $path)
+fi
+export PATH
+
+export NVM_DIR="$HOME/.nvm"
+[[ ! -s "$NVM_DIR/nvm.sh" ]] || source "$NVM_DIR/nvm.sh"
+
+alias run-init='curl -fLsS -o taskfile https://gist.githubusercontent.com/goliatone/d136377d7768acf6960f7cceefb8a24e/raw/taskfile.template && chmod +x taskfile'
+alias run=./taskfile
+alias ci=code-insiders
+alias code=code-insiders
+alias got=git
+alias pwdcp='pwd | pbcopy'
+[[ ! -x "$HOME/bin/g" ]] || alias gg='"$HOME/bin/g"'
+[[ ! -x "$HOME/bin/ai-shot" ]] || alias aishot='"$HOME/bin/ai-shot"'
+
+pwdps() {
+  local destination
+  destination=$(/usr/bin/pbpaste) || return
+  cd -- "$destination" || { print -u2 'Clipboard does not contain an accessible directory.'; return 1; }
+}
+
+mdfmt() {
+  local file temporary
+  (( $+commands[pandoc] && $+commands[sponge] )) || { print -u2 'mdfmt requires pandoc and sponge.'; return 1; }
+  for file in "$@"; do
+    temporary=$(mktemp) || return
+    if pandoc -d "$HOME/.config/pandoc-mdfmt.yaml" "$file" > "$temporary"; then
+      if ! sponge "$file" < "$temporary"; then
+        rm -f "$temporary"
+        return 1
+      fi
+    else
+      rm -f "$temporary"
+      return 1
+    fi
+    rm -f "$temporary"
+  done
+}
+
+export SAM_CLI_TELEMETRY=0 COCOAPODS_DISABLE_STATS=1 HOMEBREW_NO_ANALYTICS=1
+export DAGGER_NO_NAG=1 GH_TELEMETRY=false DO_NOT_TRACK=true SBX_NO_TELEMETRY=1
+export BAT_THEME=1337
+
+(( ! $+commands[ngrok] )) || eval "$(ngrok completion)"
+if [[ "$TERM_PROGRAM" == kiro ]] && (( $+commands[kiro] )); then
+  source "$(kiro --locate-shell-integration-path zsh)"
+fi
+if [[ -r "$HOME/.zsh/completions/_ctx" ]]; then
+  source "$HOME/.zsh/completions/_ctx"
+  compdef _ctx ctx 'ctx.sh'
+fi
+
+# Keep credentials and machine-specific customizations in this untracked file.
+[[ ! -r "$HOME/.zshrc.local" ]] || source "$HOME/.zshrc.local"

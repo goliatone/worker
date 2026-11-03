@@ -1,84 +1,69 @@
 #!/usr/bin/env bash
+# Shared globals below are consumed by sourced modules.
+# shellcheck disable=SC2034
+set -Eeuo pipefail
 
-#####################################################
-# To start worker, run this file
-#
-# You can turn off modules & extensions by commenting
-# out the lines below the echo's
-################################
+ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+DRY_RUN=0
+REPLACE_CONFIG=0
+SKIP_MACOS=0
+SKIP_EXTENSIONS=0
+WORKER_HOME=${WORKER_HOME:-$HOME}
+WARNINGS=0
 
-# Export env ROOT to current directory run test from absolute path
-ROOT=$PWD
+usage() {
+  cat <<'EOF'
+Usage: ./make [--dry-run] [--replace-config] [--skip-macos] [--skip-extensions]
 
-# Make sure we can execute each file
-for MODULE in $ROOT/modules/*; do chmod +x $MODULE; done
+  --dry-run         Print the plan. No downloads, installs, config writes or defaults changes.
+  --replace-config  Back up and replace differing config files (default: preserve them).
+  --skip-macos      Leave macOS preferences alone.
+  --skip-extensions Install Insiders configuration without installing extensions.
+  --help            Show this help.
 
-# 1. Install Command Line Tools.
-echo "Updating xcode-select..."
-xcode-select --install;
+Run as your normal user. Homebrew may request administrator access when needed.
+EOF
+}
 
-# 2. Install homebrew.
-echo "Installing brew..."
-bash "$ROOT/modules/brew.sh"
-
-# 3. Install formulas and cask from Brewfile.
-echo "Reading from brewfile..."
-brew bundle --file="$ROOT/extensions/Brewfile"
-
-# 4. Install Node and NPM trough NVM.
-echo "Downloading and installing nvm..."
-bash "$ROOT/modules/nvm.sh"
-
-# 5. Installing yarn and global packages
-echo "Installing yarn..."
-bash "$ROOT/extensions/yarn"
-
-# 6. Install Python versions for pyenv.
-echo "Installing pyenv versions..."
-bash "$ROOT/modules/python.sh"
-
-echo "Installing modules from pip..."
-bash "$ROOT/extensions/pip"
-
-# 7. Use the .gemrc file for Rubygems
-echo "Presetting Ruby..."
-bash "$ROOT/modules/ruby.sh"
-
-# 8. Install Rubygems.
-echo "Installing some gems..."
-bundle install --gemfile="$ROOT/extensions/Gemfile"
-
-# 9. Install APM packages & themes
-echo "Installing apm packages..."
-apm install --packages-file "$ROOT/extensions/Atomfile"
-
-# 10. Use the .gemrc file for Rubygems
-echo "Installing gvm to manage Go..."
-bash "$ROOT/modules/gvm.sh"
-
-# 11. Update macOS defaults
-echo "Updating macOS defaults..."
-bash "$ROOT/modules/mac.sh"
-
-# 12. Updte vim...
-echo "Installing vim..."
-bash "$ROOT/modules/vim.sh"
-
-echo "Configure iterm2..."
-bash "$ROOT/modules/iterm2.sh"
-
-echo "Configure zsh..."
-bash "$ROOT/modules/zsh.sh"
-
-# 14. Perform additional local changes described in ./worker.local
-if [[ -f "$ROOT/worker.local" ]]; then bash "$ROOT/worker.local"; fi
-
-# Reload modified applications
-for APP in "Activity Monitor" "Address Book" "Calendar" "Contacts" "cfprefsd" \
-"Dock" "Finder" "Mail" "Messages" "Safari" "SystemUIServer"; do
-	killall "${APP}" > /dev/null 2>&1
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN=1 ;;
+    --replace-config) REPLACE_CONFIG=1 ;;
+    --skip-macos) SKIP_MACOS=1 ;;
+    --skip-extensions) SKIP_EXTENSIONS=1 ;;
+    --help|-h) usage; exit 0 ;;
+    *) printf 'Unknown option: %s\n' "$arg" >&2; usage >&2; exit 2 ;;
+  esac
 done
 
-echo "Done. Note that some of these changes require a logout/restart to take effect."
-echo "Now reloading shell..."
-exec $SHELL -l
+# All modules share one environment; none source the user's shell configuration.
+WORKER_LOADED=1
+# shellcheck source=utils.sh
+source "$ROOT/utils.sh"
+trap 'printf "Worker stopped at %s:%s. Resolve the error and rerun.\n" "${BASH_SOURCE[0]}" "$LINENO" >&2' ERR
+
+[[ $(uname -s) == Darwin ]] || die 'Worker supports macOS only.'
+[[ $DRY_RUN == 1 || $EUID != 0 ]] || die 'Run worker as your normal user, not with sudo.'
+case "$WORKER_HOME" in /*) ;; *) die 'WORKER_HOME must be an absolute path.' ;; esac
+case "$(uname -m)" in
+  arm64) BREW_PREFIX=/opt/homebrew; WORKER_GOARCH=arm64 ;;
+  x86_64)
+    [[ $(sysctl -in sysctl.proc_translated 2>/dev/null || true) != 1 ]] || die 'Open a native terminal; this shell is running under Rosetta.'
+    BREW_PREFIX=/usr/local; WORKER_GOARCH=amd64 ;;
+  *) die 'Unsupported CPU architecture.' ;;
+esac
+
+[[ $DRY_RUN == 0 ]] || log 'DRY RUN: commands below are plans only; no external installers will run.'
+for module in brew nvm go git zsh vscode mac; do
+  # shellcheck disable=SC1090
+  source "$ROOT/modules/$module.sh"
+  "setup_$module"
+done
+
+if [[ $DRY_RUN == 1 ]]; then
+  log "Dry run complete ($WARNINGS notices). Nothing was changed."
+else
+  log "Setup finished ($WARNINGS notices; review any preserved files or deferred steps above)."
+  log 'Open a new terminal. Reopen Finder or log out to see preference changes.'
+  log 'Sign in to GitHub and Docker as needed; no apps or background services were launched.'
+fi

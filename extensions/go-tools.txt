@@ -1,0 +1,5 @@
+# executable module/package@version (captured from the current workstation)
+gopls golang.org/x/tools/gopls@v0.23.0
+dlv github.com/go-delve/delve/cmd/dlv@v1.27.1
+staticcheck honnef.co/go/tools/cmd/staticcheck@v0.7.0
+govulncheck golang.org/x/vuln/cmd/govulncheck@v1.8.0

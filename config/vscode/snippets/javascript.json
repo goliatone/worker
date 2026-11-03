@@ -1,0 +1,124 @@
+{
+  "Print to console": {
+    "prefix": "log",
+    "body": [
+      "console.log('$1');",
+      "$2"
+    ],
+    "description": "Log output to console"
+  },
+  "New promise": {
+    "prefix": "prom",
+    "body": [
+      "new Promise((resolve, reject)=>{",
+      "\t$1",
+      "});"
+    ],
+    "description": "Create a new Promise"
+  },
+  "New config": {
+    "prefix": "cnf",
+    "body": [
+      "'use strict';",
+      "",
+      "module.exports = {",
+      "\t$1",
+      "};"
+    ],
+    "description": "Create a new core.io configuration object"
+  },
+  "New Class": {
+    "prefix": "cls",
+    "body": [
+      "'use strict';",
+      "",
+      "const extend = require('gextend');",
+      "const defaults = {};",
+      "",
+      "class $1 $2 {",
+      "    constructor(config = {}) {",
+      "        config = extend({}, this.constructor.defaults, config);",
+      "        this.init(config);",
+      "    }",
+      "",
+      "    init(config = {}) {",
+      "        if (this.initialized) return;",
+      "        this.initialized = true;",
+      "        extend(this, config);",
+      "        $3",
+      "    }",
+      "}",
+      "",
+      "$1.defaults = defaults;",
+      "",
+      "module.exports = $1;"
+    ],
+    "description": "Create a new Class definition"
+  },
+  "New Command": {
+    "prefix": "cmd",
+    "body": [
+      "'use strict';",
+      "",
+      "",
+      "class $1 {",
+      "    execute(event) {",
+      "        const context = event.context;",
+      "        const logger = context.getLogger($2);",
+      "        $3",
+      "    }",
+      "",
+      "}",
+      "",
+      "$1.ID = '$1';",
+      "",
+      "module.exports = $1;"
+    ],
+    "description": "Create a new core.io Command definition"
+  },
+  "New core.io module": {
+    "prefix": "mdl",
+    "body": [
+      "'use strict';",
+      "",
+      "module.exports.init = function(context, config) {",
+      "    const logger = context.getLogger(config.moduleid);",
+      "",
+      "    $1",
+      "};",
+      ""
+    ],
+    "description": "Create a new core.io Command definition"
+  },
+  "New core.io-persistence Model": {
+    "prefix": "mod",
+    "body": [
+      "'use strict';",
+      "",
+      "const BaseModel = require('core.io-persistence').BaseModel;",
+      "",
+      "const schema = {",
+      "    identity: '$1',",
+      "    exportName: '$2',",
+      "    connection: 'development',",
+      "    attributes: {",
+      "        name: {",
+      "            index: true,",
+      "            type: 'string',",
+      "        },",
+      "        description: {",
+      "            type: 'string',",
+      "        }",
+      "    }",
+      "};",
+      "",
+      "const Model = BaseModel.extend(schema);",
+      "",
+      "module.exports = Model;",
+      "",
+      "module.exports.schema = schema;",
+      ""
+    ],
+    "description": "Create a new core.io Command definition"
+  }
+}

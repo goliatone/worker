@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-
-# Export env ROOT to current directory run test from absolute path
-ROOT=$PWD
-
-# If tests are not executable, make sure they all are
-for TEST in $ROOT/tests/*; do chmod +x $TEST; done
-
-##################################################################################
-
-# Run the nvm(& npm) test
-bash "$ROOT/tests/nvm.test.sh"
+set -euo pipefail
+ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+cd "$ROOT"
+for script in make utils.sh test.local modules/*.sh; do bash -n "$script"; done
+for config in config/zsh/zshenv config/zsh/zprofile config/zsh/zshrc; do zsh -n "$config"; done
+if command -v shellcheck >/dev/null 2>&1; then
+  shellcheck -x make utils.sh test.local modules/*.sh
+else
+  printf 'ShellCheck not found; install it to run the lint check.\n' >&2
+  exit 1
+fi
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p 'test_*.py' -v

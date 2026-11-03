@@ -1,0 +1,6 @@
+# Login-only environment. NVM is loaded later in .zshrc so it owns Node's PATH.
+if (( $+commands[brew] )); then
+  eval "$(brew shellenv)"
+fi
+[[ ! -r "$HOME/.swiftly/env.sh" ]] || source "$HOME/.swiftly/env.sh"
+[[ ! -r "$HOME/.zprofile.local" ]] || source "$HOME/.zprofile.local"
