@@ -24,7 +24,7 @@ class WorkerTests(unittest.TestCase):
         self.state = self.base / 'state'; self.state.mkdir()
         self.log = self.base / 'commands.log'; self.log.touch()
         fake = '#!' + sys.executable + '\n' + (ROOT / 'tests/fake-command.py').read_text().split('\n', 1)[1]
-        for name in ['uname', 'sysctl', 'xcode-select', 'brew', 'git', 'npm', 'node', 'go', 'gh', 'code-insiders', 'defaults', 'curl', 'sudo', 'chsh', 'killall', 'open']:
+        for name in ['uname', 'sysctl', 'sw_vers', 'xcode-select', 'brew', 'git', 'npm', 'node', 'go', 'gh', 'code-insiders', 'defaults', 'curl', 'sudo', 'chsh', 'killall', 'open']:
             p = bin_dir / name; p.write_text(fake); p.chmod(0o700)
         self.env = {**os.environ, 'PATH': str(bin_dir) + ':/usr/bin:/bin:/usr/sbin:/sbin',
                     'WORKER_HOME': str(self.home), 'WORKER_TEST_PREFIX': str(self.prefix),
@@ -43,7 +43,7 @@ class WorkerTests(unittest.TestCase):
         return self.log.read_text().splitlines()
 
     def assert_read_only_commands(self):
-        self.assertTrue(all(s.startswith('uname ') or s == 'xcode-select -p' or
+        self.assertTrue(all(s.startswith('uname ') or s in ['xcode-select -p', 'sw_vers -productVersion'] or
                             (s.startswith('git config --file ') and
                              ' --no-includes --fixed-value --get-all ' in s)
                             for s in self.commands()), self.commands())
@@ -253,15 +253,57 @@ exec /usr/bin/git ls-remote --get-url https://github.com/deskflow/homebrew-tap
         self.run_worker('--skip-extensions', '--skip-macos')
         self.assertFalse(any('Brewfile.deskflow' in s for s in self.commands()))
 
+    def test_optional_ai_dry_run_and_alias(self):
+        default = self.run_worker('--dry-run')
+        self.assertNotIn('Brewfile.ai', default.stdout)
+        for flags in [('--with-ai',), ('--ai',), ('--ai', '--with-ai', '--with-deskflow')]:
+            with self.subTest(flags=flags):
+                result = self.run_worker('--dry-run', *flags)
+                self.assertEqual(result.stdout.count('/Brewfile.ai'), 1)
+                for app in ['Ollama', 'LM Studio', 'Bionic', 'Unsloth Desktop']:
+                    self.assertIn(app, result.stdout)
+                self.assertEqual(list(self.home.iterdir()), [])
+                self.assertEqual(list(self.state.iterdir()), [])
+                self.assert_read_only_commands()
+
+    def test_optional_ai_failure_and_retry(self):
+        self.run_worker('--ai', '--with-deskflow', '--skip-extensions', '--skip-macos',
+                        expected=12, WORKER_TEST_FAIL_AI='1')
+        self.assertTrue(any(s.endswith('/Brewfile.ai') for s in self.commands()))
+        self.assertFalse(any(s.startswith(('git ', 'npm ', 'go ', 'defaults ')) for s in self.commands()))
+        self.assertEqual(list(self.home.iterdir()), [])
+        self.log.write_text('')
+        self.run_worker('--ai', '--with-ai', '--with-deskflow', '--skip-extensions', '--skip-macos')
+        self.assertEqual(sum(s.endswith('/Brewfile.ai') for s in self.commands()), 1)
+        self.assertTrue(any(s.endswith('/Brewfile.deskflow') for s in self.commands()))
+        self.assertTrue((self.home / '.zshrc').exists())
+        self.log.write_text('')
+        self.run_worker('--skip-extensions', '--skip-macos')
+        self.assertFalse(any('Brewfile.ai' in s for s in self.commands()))
+
+    def test_optional_ai_requires_supported_mac_before_any_changes(self):
+        for flags in [('--ai',), ('--dry-run', '--with-ai')]:
+            for overrides, message in [({'WORKER_TEST_ARCH': 'x86_64'}, 'requires Apple Silicon'),
+                                       ({'WORKER_TEST_MACOS_VERSION': '13.7.8'}, 'requires macOS 14'),
+                                       ({'WORKER_TEST_MACOS_VERSION': 'unknown'}, 'Could not determine')]:
+                with self.subTest(flags=flags, overrides=overrides):
+                    self.log.write_text('')
+                    result = self.run_worker(*flags, expected=1, **overrides)
+                    self.assertIn(message, result.stderr)
+                    self.assertTrue(all(s.startswith(('uname ', 'sysctl ', 'sw_vers ')) for s in self.commands()), self.commands())
+                    self.assertEqual(list(self.home.iterdir()), [])
+                    self.assertEqual(list(self.state.iterdir()), [])
+
     def test_bundle_cleanup_settings_cannot_override_worker(self):
         for setting in ('HOMEBREW_BUNDLE_INSTALL_CLEANUP', 'HOMEBREW_BUNDLE_FORCE_INSTALL_CLEANUP'):
             with self.subTest(setting=setting):
-                self.run_worker('--with-deskflow', '--skip-extensions', '--skip-macos', **{setting: '1'})
+                self.run_worker('--with-deskflow', '--with-ai', '--skip-extensions', '--skip-macos', **{setting: '1'})
 
     def test_selected_brewfiles_must_exist_before_any_installation(self):
         checkout = self.base / 'checkout with spaces'
         shutil.copytree(ROOT, checkout, ignore=shutil.ignore_patterns('.git', '__pycache__'))
-        for name, selection in [('Brewfile', []), ('Brewfile.deskflow', ['--with-deskflow'])]:
+        for name, selection in [('Brewfile', []), ('Brewfile.deskflow', ['--with-deskflow']),
+                                ('Brewfile.ai', ['--with-ai'])]:
             manifest = checkout / 'extensions' / name
             original = manifest.read_bytes()
             manifest.unlink()
@@ -274,30 +316,32 @@ exec /usr/bin/git ls-remote --get-url https://github.com/deskflow/homebrew-tap
                     self.assertTrue(all(s.startswith('uname ') for s in self.commands()), self.commands())
                     self.assertEqual(list(self.home.iterdir()), [])
                     self.assertEqual(list(self.state.iterdir()), [])
-            if name == 'Brewfile.deskflow':
+            if name != 'Brewfile':
                 self.run_worker('--dry-run', repo=checkout)
             manifest.write_bytes(original)
 
     def test_optional_apps_dry_run_after_setup_is_read_only(self):
-        self.run_worker('--with-deskflow', '--skip-extensions', '--skip-macos')
+        self.run_worker('--with-deskflow', '--with-ai', '--skip-extensions', '--skip-macos')
         def snapshot():
             return {str(p.relative_to(self.base)): (p.read_bytes(), p.stat().st_mtime_ns)
                     for root in (self.home, self.state) for p in root.rglob('*') if p.is_file()}
         before = snapshot()
         self.log.write_text('')
-        result = self.run_worker('--dry-run', '--replace-config', '--with-deskflow')
+        result = self.run_worker('--dry-run', '--replace-config', '--with-deskflow', '--with-ai')
         self.assertIn('Amphetamine', result.stdout)
         self.assertIn('Brewfile.deskflow', result.stdout)
+        self.assertIn('Brewfile.ai', result.stdout)
         self.assertEqual(before, snapshot())
         self.assert_read_only_commands()
         self.log.write_text('')
-        self.run_worker('--with-deskflow', '--skip-extensions', '--skip-macos')
+        self.run_worker('--with-deskflow', '--with-ai', '--skip-extensions', '--skip-macos')
         self.assertEqual(before, snapshot())
 
     def test_apply_twice_keeps_files_tools_and_extensions(self):
         self.run_worker()
         first = self.commands()
         self.assertFalse(any('Brewfile.deskflow' in s for s in first))
+        self.assertFalse(any('Brewfile.ai' in s for s in first))
         files = {str(p.relative_to(self.home)): (p.read_bytes(), p.stat().st_mtime_ns)
                  for p in self.home.rglob('*') if p.is_file()}
         self.log.write_text('')

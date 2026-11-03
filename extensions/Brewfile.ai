@@ -1,0 +1,10 @@
+# Selected only by ./make --with-ai (or --ai); keep installed versions on reruns.
+# Apple Silicon, macOS 14+. Apps only: no services or model downloads.
+cask_args appdir: "/Applications"
+
+# The app also provides the ollama CLI; do not install a second Ollama formula.
+cask "ollama-app"
+cask "lm-studio"
+cask "lm-studio-bionic"
+# Unsloth Desktop is currently distributed as a beta release.
+cask "unsloth"

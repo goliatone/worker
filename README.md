@@ -38,6 +38,8 @@ Options:
 - `--skip-macos`: leave Finder and Dock preferences unchanged.
 - `--skip-extensions`: copy Insiders configuration without installing extensions.
 - `--with-deskflow`: also install the stable Deskflow app from its upstream tap.
+- `--with-ai` (alias `--ai`): also install Ollama, LM Studio, LM Studio Bionic, and
+  Unsloth Desktop; requires Apple Silicon and macOS 14 or later.
 - `--help`: show usage.
 
 To review replacement before applying it:
@@ -55,6 +57,7 @@ To review replacement before applying it:
 | Core packages | `extensions/Brewfile`: Git and extensions, Go, Python, uv, pipx, AWS CLI, shell utilities, D2, Pandoc |
 | Apps | VS Code Insiders, iTerm2, Docker Desktop, Amphetamine (Mac App Store via `mas`) |
 | Optional app | `--with-deskflow`: Deskflow from `deskflow/tap`; `extensions/Brewfile.deskflow` |
+| Optional AI apps | `--with-ai` / `--ai`: Ollama, LM Studio, Bionic, Unsloth Desktop; `extensions/Brewfile.ai` |
 | Node / pnpm | NVM v0.40.8; keep a supported default Node or install current LTS; pnpm 10.32.1 when absent |
 | Go tools | Versioned `gopls`, `dlv`, `staticcheck`, `govulncheck` in `extensions/go-tools.txt`; golangci-lint through Homebrew |
 | Git | Identity, 28 aliases, delta, LFS filters, `main`, pull rebase, push defaults, global ignores |
@@ -72,6 +75,38 @@ The selected pnpm 10 release requires Node >=18.12. If an older NVM default is
 present, worker stops before installing pnpm and explains how to select LTS; it
 does not silently change an existing default. `PNPM_HOME` is on PATH before its
 directory exists, so the first global package installation works.
+
+## Optional AI apps
+
+```sh
+./make --dry-run --ai
+./make --ai
+# Flags can be combined:
+./make --dry-run --with-ai --with-deskflow
+./make --with-ai --with-deskflow
+```
+
+This runs the normal setup plus the separate `extensions/Brewfile.ai` bundle:
+
+| App | Homebrew cask |
+| --- | --- |
+| Ollama app and CLI | [ollama-app](https://formulae.brew.sh/cask/ollama-app) |
+| LM Studio | [lm-studio](https://formulae.brew.sh/cask/lm-studio) |
+| LM Studio Bionic | [lm-studio-bionic](https://formulae.brew.sh/cask/lm-studio-bionic) |
+| Unsloth Desktop | [unsloth](https://formulae.brew.sh/cask/unsloth) |
+
+The complete bundle requires **Apple Silicon and macOS 14+**. Worker checks this
+before any installs or config repairs, including in dry-run. Bionic is LM Studio's
+separate agent app. Unsloth is the Mac desktop app, currently released as a beta;
+this does not install the Python training library into your projects. See the
+[official Unsloth Mac setup](https://unsloth.ai/docs/get-started/install/mac) for
+its desktop, web UI, and library options.
+
+As with the core bundle, `--no-upgrade` keeps existing Homebrew-managed versions.
+Without the flag, worker leaves AI apps alone. Worker does not launch the apps,
+start servers/login items, download models, or configure accounts. Open the apps
+when ready to complete their first-run setup and choose models. Their own update
+settings remain independent of worker.
 
 ## Optional Deskflow
 
@@ -227,11 +262,12 @@ Mac's personal Homebrew tap are not modified by worker.
 Requires Bash, Zsh, Python 3, Git, and ShellCheck. Tests use temporary directories
 and mocked package managers/system commands. They exercise dry-run purity,
 reruns, backups, symlink handling, partial failures, fresh Homebrew bootstrapping,
-runtime compatibility, native Go binaries, manifests, optional Deskflow selection,
-inherited cleanup settings, automatic Git URL repair/backup/failure handling, and
+runtime compatibility, native Go binaries, manifests, optional Deskflow/AI selection,
+AI platform checks and retries, inherited cleanup settings, automatic Git URL
+repair/backup/failure handling, and
 deferred authentication; they do not download packages or modify this Mac's
-preferences. When Homebrew is
-available, an offline smoke test copies its launcher and substitutes a URL probe
+preferences. When Homebrew is available, an offline smoke test copies its launcher
+and substitutes a URL probe
 for the package manager to exercise the real environment filter. A real fresh-Mac
 installation remains a separate validation step.
 

@@ -23,6 +23,9 @@ if name == 'uname':
     print(os.environ.get('WORKER_TEST_ARCH', 'arm64') if args == ['-m'] else os.environ.get('WORKER_TEST_OS', 'Darwin'))
 elif name == 'sysctl':
     print(os.environ.get('WORKER_TEST_ROSETTA', '0'))
+elif name == 'sw_vers':
+    assert args == ['-productVersion']
+    print(os.environ.get('WORKER_TEST_MACOS_VERSION', '14.0'))
 elif name == 'xcode-select':
     if args == ['-p']:
         sys.exit(1 if os.environ.get('WORKER_TEST_NO_CLT') else 0)
@@ -51,6 +54,8 @@ elif name == 'brew':
             checked.append(resolved); save('public-git-urls', checked)
         if any(arg.endswith('/Brewfile.deskflow') for arg in args):
             sys.exit(12 if os.environ.get('WORKER_TEST_FAIL_DESKFLOW') else 0)
+        if any(arg.endswith('/Brewfile.ai') for arg in args):
+            sys.exit(12 if os.environ.get('WORKER_TEST_FAIL_AI') else 0)
         sys.exit(12 if os.environ.get('WORKER_TEST_FAIL_BREW') else 0)
     else:
         assert args == ['analytics', 'off'], args

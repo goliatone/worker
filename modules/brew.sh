@@ -2,14 +2,26 @@
 [[ ${WORKER_LOADED:-0} == 1 ]] || { echo 'Run ./make, not individual modules.' >&2; exit 1; }
 
 setup_brew() {
-  local installer installed_prefix manifest
+  local installer installed_prefix manifest macos_version macos_major
   local manifests=("$ROOT/extensions/Brewfile")
   if [[ ${WITH_DESKFLOW:-0} == 1 ]]; then
     manifests+=("$ROOT/extensions/Brewfile.deskflow")
   fi
+  if [[ ${WITH_AI:-0} == 1 ]]; then
+    manifests+=("$ROOT/extensions/Brewfile.ai")
+  fi
   for manifest in "${manifests[@]}"; do
     [[ -f "$manifest" && -r "$manifest" ]] || die "Missing or unreadable Brewfile: $manifest"
   done
+  if [[ ${WITH_AI:-0} == 1 ]]; then
+    [[ $WORKER_GOARCH == arm64 ]] || die '--with-ai requires Apple Silicon; the LM Studio, Bionic, and Unsloth casks do not support Intel Macs.'
+    macos_version=$(sw_vers -productVersion)
+    macos_major=${macos_version%%.*}
+    case "$macos_major" in
+      ''|*[!0-9]*) die "Could not determine the macOS version: $macos_version" ;;
+    esac
+    [[ $macos_major -ge 14 ]] || die "--with-ai requires macOS 14 or later (Ollama requirement); found $macos_version."
+  fi
   log 'Homebrew and core packages'
   if [[ $DRY_RUN == 1 ]]; then
     log '  Would verify Xcode Command Line Tools; if absent, request installation and stop for completion.'
@@ -61,5 +73,10 @@ setup_brew() {
     log 'Optional Deskflow: stable release from deskflow/tap; trust only its deskflow cask.'
     run "$BREW_BIN" bundle install --no-upgrade --file="$ROOT/extensions/Brewfile.deskflow"
     log '  Open Deskflow on both Macs to pair them and grant Accessibility and Local Network permissions.'
+  fi
+  if [[ ${WITH_AI:-0} == 1 ]]; then
+    log 'Optional AI apps: Ollama (app and CLI), LM Studio, LM Studio Bionic, and Unsloth Desktop.'
+    run "$BREW_BIN" bundle install --no-upgrade --file="$ROOT/extensions/Brewfile.ai"
+    log '  Open the apps when ready to complete first-run setup and select models. Worker does not launch them or download models.'
   fi
 }
