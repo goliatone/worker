@@ -7,6 +7,7 @@ brew "git-delta"
 brew "git-filter-repo"
 brew "git-cliff"
 brew "gh"
+brew "mas"
 brew "gibo"
 brew "go"
 brew "golangci-lint"
@@ -30,3 +31,6 @@ brew "d2"
 cask "visual-studio-code@insiders"
 cask "iterm2"
 cask "docker-desktop"
+
+# Sign in to the Mac App Store before installing missing App Store apps.
+mas "Amphetamine", id: 937984704

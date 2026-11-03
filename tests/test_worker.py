@@ -59,9 +59,75 @@ class WorkerTests(unittest.TestCase):
         self.assertNotIn('MUST_NOT_RUN', result.stdout + result.stderr)
         self.assertFalse((self.home / '.local').exists())
 
+    def test_optional_deskflow_dry_run_does_not_invoke_homebrew(self):
+        default = self.run_worker('--dry-run')
+        self.assertNotIn('Brewfile.deskflow', default.stdout)
+        selected = self.run_worker('--dry-run', '--with-deskflow')
+        self.assertIn('Brewfile.deskflow', selected.stdout)
+        self.assertIn('deskflow/tap', selected.stdout)
+        self.assertEqual(list(self.home.iterdir()), [])
+        self.assertEqual(list(self.state.iterdir()), [])
+        self.assertTrue(all(s.startswith('uname ') for s in self.commands()), self.commands())
+
+    def test_optional_deskflow_failure_and_retry(self):
+        self.run_worker('--with-deskflow', '--skip-extensions', '--skip-macos',
+                        expected=12, WORKER_TEST_FAIL_DESKFLOW='1')
+        self.assertTrue(any(s.endswith('/Brewfile.deskflow') for s in self.commands()))
+        self.assertFalse(any(s.startswith(('git ', 'npm ', 'go ', 'defaults ')) for s in self.commands()))
+        self.assertEqual(list(self.home.iterdir()), [])
+        self.log.write_text('')
+        self.run_worker('--with-deskflow', '--skip-extensions', '--skip-macos')
+        self.assertTrue(any(s.endswith('/Brewfile.deskflow') for s in self.commands()))
+        self.assertTrue((self.home / '.zshrc').exists())
+        self.log.write_text('')
+        self.run_worker('--skip-extensions', '--skip-macos')
+        self.assertFalse(any('Brewfile.deskflow' in s for s in self.commands()))
+
+    def test_bundle_cleanup_settings_cannot_override_worker(self):
+        for setting in ('HOMEBREW_BUNDLE_INSTALL_CLEANUP', 'HOMEBREW_BUNDLE_FORCE_INSTALL_CLEANUP'):
+            with self.subTest(setting=setting):
+                self.run_worker('--with-deskflow', '--skip-extensions', '--skip-macos', **{setting: '1'})
+
+    def test_selected_brewfiles_must_exist_before_any_installation(self):
+        checkout = self.base / 'checkout with spaces'
+        shutil.copytree(ROOT, checkout, ignore=shutil.ignore_patterns('.git', '__pycache__'))
+        for name, selection in [('Brewfile', []), ('Brewfile.deskflow', ['--with-deskflow'])]:
+            manifest = checkout / 'extensions' / name
+            original = manifest.read_bytes()
+            manifest.unlink()
+            for mode in [[], ['--dry-run']]:
+                with self.subTest(manifest=name, mode=mode):
+                    self.log.write_text('')
+                    result = self.run_worker(*mode, *selection, repo=checkout, expected=1)
+                    self.assertIn('Missing or unreadable Brewfile:', result.stderr)
+                    self.assertIn(name, result.stderr)
+                    self.assertTrue(all(s.startswith('uname ') for s in self.commands()), self.commands())
+                    self.assertEqual(list(self.home.iterdir()), [])
+                    self.assertEqual(list(self.state.iterdir()), [])
+            if name == 'Brewfile.deskflow':
+                self.run_worker('--dry-run', repo=checkout)
+            manifest.write_bytes(original)
+
+    def test_optional_apps_dry_run_after_setup_is_read_only(self):
+        self.run_worker('--with-deskflow', '--skip-extensions', '--skip-macos')
+        def snapshot():
+            return {str(p.relative_to(self.base)): (p.read_bytes(), p.stat().st_mtime_ns)
+                    for root in (self.home, self.state) for p in root.rglob('*') if p.is_file()}
+        before = snapshot()
+        self.log.write_text('')
+        result = self.run_worker('--dry-run', '--replace-config', '--with-deskflow')
+        self.assertIn('Amphetamine', result.stdout)
+        self.assertIn('Brewfile.deskflow', result.stdout)
+        self.assertEqual(before, snapshot())
+        self.assertTrue(all(s.startswith('uname ') for s in self.commands()), self.commands())
+        self.log.write_text('')
+        self.run_worker('--with-deskflow', '--skip-extensions', '--skip-macos')
+        self.assertEqual(before, snapshot())
+
     def test_apply_twice_keeps_files_tools_and_extensions(self):
         self.run_worker()
         first = self.commands()
+        self.assertFalse(any('Brewfile.deskflow' in s for s in first))
         files = {str(p.relative_to(self.home)): (p.read_bytes(), p.stat().st_mtime_ns)
                  for p in self.home.rglob('*') if p.is_file()}
         self.log.write_text('')

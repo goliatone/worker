@@ -2,7 +2,14 @@
 [[ ${WORKER_LOADED:-0} == 1 ]] || { echo 'Run ./make, not individual modules.' >&2; exit 1; }
 
 setup_brew() {
-  local installer installed_prefix
+  local installer installed_prefix manifest
+  local manifests=("$ROOT/extensions/Brewfile")
+  if [[ ${WITH_DESKFLOW:-0} == 1 ]]; then
+    manifests+=("$ROOT/extensions/Brewfile.deskflow")
+  fi
+  for manifest in "${manifests[@]}"; do
+    [[ -f "$manifest" && -r "$manifest" ]] || die "Missing or unreadable Brewfile: $manifest"
+  done
   log 'Homebrew and core packages'
   if [[ $DRY_RUN == 1 ]]; then
     log '  Would verify Xcode Command Line Tools; if absent, request installation and stop for completion.'
@@ -41,6 +48,16 @@ setup_brew() {
     export PATH="$BREW_PREFIX/bin:$BREW_PREFIX/sbin:$PATH"
   fi
   export HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_ANALYTICS=1
+  # Bundle cleanup is separate from install cleanup and can remove unrelated
+  # packages/trust entries, especially with the separate optional Brewfile.
+  unset HOMEBREW_BUNDLE_INSTALL_CLEANUP HOMEBREW_BUNDLE_FORCE_INSTALL_CLEANUP
   run "$BREW_BIN" analytics off
+  log '  Includes Amphetamine (Mac App Store, 937984704); sign in to the App Store before its first install.'
+  log '  App Store installation may request authentication. If it fails, finish signing in and rerun ./make.'
   run "$BREW_BIN" bundle install --no-upgrade --file="$ROOT/extensions/Brewfile"
+  if [[ ${WITH_DESKFLOW:-0} == 1 ]]; then
+    log 'Optional Deskflow: stable release from deskflow/tap; trust only its deskflow cask.'
+    run "$BREW_BIN" bundle install --no-upgrade --file="$ROOT/extensions/Brewfile.deskflow"
+    log '  Open Deskflow on both Macs to pair them and grant Accessibility and Local Network permissions.'
+  fi
 }

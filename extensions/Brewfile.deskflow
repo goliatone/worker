@@ -1,0 +1,4 @@
+# Selected only by ./make --with-deskflow; existing installations are not upgraded.
+cask_args appdir: "/Applications"
+tap "deskflow/tap"
+cask "deskflow/tap/deskflow", trusted: true

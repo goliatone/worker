@@ -32,6 +32,12 @@ elif name == 'brew':
         assert '--no-upgrade' in args
         assert os.environ['HOMEBREW_NO_AUTO_UPDATE'] == '1'
         assert os.environ['HOMEBREW_NO_INSTALL_CLEANUP'] == '1'
+        # Bundle cleanup removes packages absent from this Brewfile. The normal
+        # install-cleanup setting above does not disable these separate switches.
+        assert 'HOMEBREW_BUNDLE_INSTALL_CLEANUP' not in os.environ
+        assert 'HOMEBREW_BUNDLE_FORCE_INSTALL_CLEANUP' not in os.environ
+        if any(arg.endswith('/Brewfile.deskflow') for arg in args):
+            sys.exit(12 if os.environ.get('WORKER_TEST_FAIL_DESKFLOW') else 0)
         sys.exit(12 if os.environ.get('WORKER_TEST_FAIL_BREW') else 0)
     else:
         assert args == ['analytics', 'off'], args

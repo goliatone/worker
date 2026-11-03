@@ -10,6 +10,11 @@ Use a native terminal as your normal user. Download this repository or clone it
 after installing Xcode Command Line Tools. Worker requests the tools if missing,
 then stops so you can finish Apple's installation and rerun it.
 
+Sign in to the **Mac App Store** before installing Amphetamine. Worker installs
+it through Homebrew Bundle and `mas`; macOS may request administrator or Apple
+Account authentication. If that step fails, complete sign-in and rerun `./make`.
+An already-installed copy is kept without upgrading it.
+
 ```sh
 git clone https://github.com/goliatone/worker.git ~/.worker
 cd ~/.worker
@@ -25,11 +30,13 @@ Options:
 
 - `--dry-run`: print planned work without invoking Homebrew, GitHub CLI, Node,
   Go, VS Code, downloads, or preference writes. It does not source user configs
-  or create directories. Package/extension availability is not checked online.
+  or create directories. Selected Brewfiles must exist and be readable, but
+  package/extension availability is not checked online.
 - `--replace-config`: back up differing destination files, then replace them.
   Without this option, existing differing files are preserved and reported.
 - `--skip-macos`: leave Finder and Dock preferences unchanged.
 - `--skip-extensions`: copy Insiders configuration without installing extensions.
+- `--with-deskflow`: also install the stable Deskflow app from its upstream tap.
 - `--help`: show usage.
 
 To review replacement before applying it:
@@ -45,7 +52,8 @@ To review replacement before applying it:
 | --- | --- |
 | Homebrew | Current official Bash installer; native Apple Silicon or Intel prefix |
 | Core packages | `extensions/Brewfile`: Git and extensions, Go, Python, uv, pipx, AWS CLI, shell utilities, D2, Pandoc |
-| Apps | VS Code Insiders, iTerm2, Docker Desktop |
+| Apps | VS Code Insiders, iTerm2, Docker Desktop, Amphetamine (Mac App Store via `mas`) |
+| Optional app | `--with-deskflow`: Deskflow from `deskflow/tap`; `extensions/Brewfile.deskflow` |
 | Node / pnpm | NVM v0.40.8; keep a supported default Node or install current LTS; pnpm 10.32.1 when absent |
 | Go tools | Versioned `gopls`, `dlv`, `staticcheck`, `govulncheck` in `extensions/go-tools.txt`; golangci-lint through Homebrew |
 | Git | Identity, 28 aliases, delta, LFS filters, `main`, pull rebase, push defaults, SSH URL rewrite, global ignores |
@@ -64,10 +72,34 @@ present, worker stops before installing pnpm and explains how to select LTS; it
 does not silently change an existing default. `PNPM_HOME` is on PATH before its
 directory exists, so the first global package installation works.
 
+## Optional Deskflow
+
+To include keyboard and mouse sharing in setup:
+
+```sh
+./make --dry-run --with-deskflow
+./make --with-deskflow
+```
+
+The flag adds the [upstream Deskflow tap](https://github.com/deskflow/homebrew-tap)
+and trusts its stable `deskflow` cask only. It uses `--no-upgrade`, so reruns keep
+installed versions. Without the flag, worker does not install Deskflow or add its
+tap; a previously installed copy is left in place. This runs the normal setup too.
+
+After installation, open Deskflow on both Macs. Use the personal Mac as the server
+(sharing its keyboard/mouse) and the work Mac as the client, then pair them and
+arrange their screens. In System Settings > Privacy & Security, grant Accessibility
+to Deskflow and its `deskflow` process, and allow Local Network access when prompted.
+See [Deskflow's macOS instructions](https://github.com/deskflow/deskflow#installing-on-macos).
+Worker does not launch Deskflow, configure connections, or change macOS permissions.
+
 ## Reruns and backups
 
 - Homebrew uses `--no-upgrade`, with automatic update and installation cleanup
-  disabled. Worker does not uninstall packages or start Homebrew services.
+  disabled. Inherited `HOMEBREW_BUNDLE_INSTALL_CLEANUP` and
+  `HOMEBREW_BUNDLE_FORCE_INSTALL_CLEANUP` are cleared for this run so Bundle cannot
+  prune other packages or trust entries. Worker does not uninstall packages or
+  start Homebrew services.
 - Existing NVM/Oh My Zsh/plugin checkouts and installed editor extensions are kept.
   Public clones bypass global Git URL rewrites so bootstrap does not need SSH keys.
 - Git and Zsh snapshots are copied, not appended or linked to the checkout.
@@ -137,6 +169,10 @@ Sign in with `gh auth login`, then rerun worker if gh-dash was deferred. Configu
 SSH access for the preserved GitHub HTTPS-to-SSH rewrite. Launch Docker and finish
 its first-run setup when needed. Reopen Finder or log out to see preference changes.
 
+Open [Amphetamine](https://apps.apple.com/us/app/amphetamine/id937984704) to choose
+its keep-awake sessions or triggers and whether it starts at login. Worker installs
+the app but does not launch it, enable a session, or change sleep/lock settings.
+
 Full Xcode, app permissions, account sign-ins, licenses, databases, Docker volumes,
 and project data remain separate migration steps. The core setup does not include
 Ruby/RVM, Rust, mobile SDKs, design apps, local-AI stacks, private/personal taps, or
@@ -157,7 +193,8 @@ Mac's personal Homebrew tap are not modified by worker.
 Requires Bash, Zsh, Python 3, Git, and ShellCheck. Tests use temporary directories
 and mocked package managers/system commands. They exercise dry-run purity,
 reruns, backups, symlink handling, partial failures, fresh Homebrew bootstrapping,
-runtime compatibility, native Go binaries, manifests, and deferred authentication;
+runtime compatibility, native Go binaries, manifests, optional Deskflow selection,
+inherited cleanup settings, and deferred authentication;
 they do not download packages or modify this Mac's preferences. A real fresh-Mac
 installation remains a separate validation step.
 

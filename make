@@ -8,17 +8,19 @@ DRY_RUN=0
 REPLACE_CONFIG=0
 SKIP_MACOS=0
 SKIP_EXTENSIONS=0
+WITH_DESKFLOW=0
 WORKER_HOME=${WORKER_HOME:-$HOME}
 WARNINGS=0
 
 usage() {
   cat <<'EOF'
-Usage: ./make [--dry-run] [--replace-config] [--skip-macos] [--skip-extensions]
+Usage: ./make [--dry-run] [--replace-config] [--skip-macos] [--skip-extensions] [--with-deskflow]
 
   --dry-run         Print the plan. No downloads, installs, config writes or defaults changes.
   --replace-config  Back up and replace differing config files (default: preserve them).
   --skip-macos      Leave macOS preferences alone.
   --skip-extensions Install Insiders configuration without installing extensions.
+  --with-deskflow    Also install Deskflow for sharing a keyboard and mouse between computers.
   --help            Show this help.
 
 Run as your normal user. Homebrew may request administrator access when needed.
@@ -31,6 +33,7 @@ for arg in "$@"; do
     --replace-config) REPLACE_CONFIG=1 ;;
     --skip-macos) SKIP_MACOS=1 ;;
     --skip-extensions) SKIP_EXTENSIONS=1 ;;
+    --with-deskflow) WITH_DESKFLOW=1 ;;
     --help|-h) usage; exit 0 ;;
     *) printf 'Unknown option: %s\n' "$arg" >&2; usage >&2; exit 2 ;;
   esac
