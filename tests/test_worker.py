@@ -321,7 +321,7 @@ exec /usr/bin/git ls-remote --get-url https://github.com/deskflow/homebrew-tap
             manifest.write_bytes(original)
 
     def test_optional_apps_dry_run_after_setup_is_read_only(self):
-        self.run_worker('--with-deskflow', '--with-ai', '--skip-extensions', '--skip-macos')
+        self.run_worker('--with-deskflow', '--with-ai', '--skip-extensions')
         def snapshot():
             return {str(p.relative_to(self.base)): (p.read_bytes(), p.stat().st_mtime_ns)
                     for root in (self.home, self.state) for p in root.rglob('*') if p.is_file()}
@@ -334,7 +334,7 @@ exec /usr/bin/git ls-remote --get-url https://github.com/deskflow/homebrew-tap
         self.assertEqual(before, snapshot())
         self.assert_read_only_commands()
         self.log.write_text('')
-        self.run_worker('--with-deskflow', '--with-ai', '--skip-extensions', '--skip-macos')
+        self.run_worker('--with-deskflow', '--with-ai', '--skip-extensions')
         self.assertEqual(before, snapshot())
 
     def test_apply_twice_keeps_files_tools_and_extensions(self):

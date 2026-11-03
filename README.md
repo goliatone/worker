@@ -182,12 +182,18 @@ The current snapshot no longer contains the blanket rewrite.
   those binaries. Existing Go binaries are checked for package, version, macOS,
   and CPU architecture; corrupt or incompatible copies are rebuilt for this Mac.
   Existing pnpm and editor extensions are not forcibly upgraded.
-- Preferences are written only when different. Worker does not restart apps,
-  change the login shell, alter power settings, or launch Docker.
+- Preferences are written only when different. Boolean writes use `true`/`false`;
+  macOS's numeric `1`/`0` readback is treated as equivalent on reruns. Worker does
+  not restart apps, change the login shell, alter power settings, or launch Docker.
 - A failed installation stops setup. Failed editor extensions are listed by the
   CLI; rerunning skips successful installs and retries missing ones.
 - Tool manifests work with or without a final newline. Installer subprocesses
   receive empty stdin so they cannot consume the remaining manifest entries.
+
+If an older checkout stopped at `defaults write ... -bool 1`, update worker and
+rerun the same flags, starting with `--dry-run`. Completed installs are kept; no
+reset or `--replace-config` is needed. The corrected run applies the remaining
+preferences. A failed preference write now names the affected domain and key.
 
 ## Configuration snapshot adjustments
 
@@ -264,10 +270,12 @@ and mocked package managers/system commands. They exercise dry-run purity,
 reruns, backups, symlink handling, partial failures, fresh Homebrew bootstrapping,
 runtime compatibility, native Go binaries, manifests, optional Deskflow/AI selection,
 AI platform checks and retries, inherited cleanup settings, automatic Git URL
-repair/backup/failure handling, and
-deferred authentication; they do not download packages or modify this Mac's
-preferences. When Homebrew is available, an offline smoke test copies its launcher
-and substitutes a URL probe
+repair/backup/failure handling, deferred authentication, and preference failures
+and retries. On macOS, a regression test also invokes real `defaults` against a
+disposable absolute plist path in a temporary directory, checks boolean types and
+numeric readback, then verifies that reruns leave the file unchanged. Tests do not
+download packages or change Finder, Dock, or global preferences. When Homebrew is
+available, an offline smoke test copies its launcher and substitutes a URL probe
 for the package manager to exercise the real environment filter. A real fresh-Mac
 installation remains a separate validation step.
 

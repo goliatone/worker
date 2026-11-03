@@ -157,9 +157,24 @@ elif name == 'defaults':
     key = '/'.join(args[1:3])
     if args[0] == 'read':
         if key not in preferences: sys.exit(1)
-        print(preferences[key])
+        value = preferences[key]
+        # macOS prints stored booleans as 1/0, not the true/false used to write.
+        print(int(value) if isinstance(value, bool) else value)
     elif args[0] == 'write':
-        preferences[key] = args[-1]; save('preferences', preferences)
+        assert len(args) == 5, args
+        if args[3] == '-bool':
+            if args[4].lower() not in ('true', 'false', 'yes', 'no'):
+                print('defaults: -bool requires true, false, yes, or no', file=sys.stderr)
+                sys.exit(255)
+            value = args[4].lower() in ('true', 'yes')
+        elif args[3] == '-string':
+            value = args[4]
+        else:
+            raise AssertionError(args)
+        if key == os.environ.get('WORKER_TEST_FAIL_PREFERENCE'):
+            print('defaults: simulated write failure', file=sys.stderr)
+            sys.exit(23)
+        preferences[key] = value; save('preferences', preferences)
     else:
         raise AssertionError(args)
 elif name == 'curl' and os.environ.get('WORKER_TEST_DOWNLOAD'):
