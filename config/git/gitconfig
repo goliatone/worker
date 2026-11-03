@@ -97,8 +97,8 @@
   hunk-header-style = file line-number syntax
 [init]
 defaultBranch=main
-[url "git@github.com:"]
-	insteadOf = "https://github.com/"
+# Keep public HTTPS URLs usable before SSH keys are configured.
+# Use an explicit SSH remote for repositories that need SSH.
 [pull]
 	rebase = true
 

@@ -33,7 +33,8 @@ Options:
   or create directories. Selected Brewfiles must exist and be readable, but
   package/extension availability is not checked online.
 - `--replace-config`: back up differing destination files, then replace them.
-  Without this option, existing differing files are preserved and reported.
+  Without this option, existing differing files are preserved and reported,
+  except for the automatic legacy Git URL repair described below.
 - `--skip-macos`: leave Finder and Dock preferences unchanged.
 - `--skip-extensions`: copy Insiders configuration without installing extensions.
 - `--with-deskflow`: also install the stable Deskflow app from its upstream tap.
@@ -56,7 +57,7 @@ To review replacement before applying it:
 | Optional app | `--with-deskflow`: Deskflow from `deskflow/tap`; `extensions/Brewfile.deskflow` |
 | Node / pnpm | NVM v0.40.8; keep a supported default Node or install current LTS; pnpm 10.32.1 when absent |
 | Go tools | Versioned `gopls`, `dlv`, `staticcheck`, `govulncheck` in `extensions/go-tools.txt`; golangci-lint through Homebrew |
-| Git | Identity, 28 aliases, delta, LFS filters, `main`, pull rebase, push defaults, SSH URL rewrite, global ignores |
+| Git | Identity, 28 aliases, delta, LFS filters, `main`, pull rebase, push defaults, global ignores |
 | GitHub CLI | `gh-dash` extension plus captured configuration; installation deferred until `gh auth login` when necessary |
 | Zsh | Oh My Zsh, `wezm`, current plugins, zsh-histdb, aliases/functions, optional tool paths, telemetry preferences |
 | Insiders | 80 extension IDs, including the captured prerelease channel, settings, keybindings, and snippets |
@@ -93,6 +94,36 @@ to Deskflow and its `deskflow` process, and allow Local Network access when prom
 See [Deskflow's macOS instructions](https://github.com/deskflow/deskflow#installing-on-macos).
 Worker does not launch Deskflow, configure connections, or change macOS permissions.
 
+Older worker snapshots added a blanket GitHub HTTPS-to-SSH rewrite, which can
+make Homebrew tap clones fail with `Permission denied (publickey)` before SSH keys
+are configured. Homebrew filters `GIT_CONFIG_GLOBAL` and `GIT_CONFIG_NOSYSTEM`, so
+passing those variables to `./make` does not reliably fix tap clones.
+
+Current worker detects the exact `url.git@github.com:.insteadOf = https://github.com/`
+rule in `~/.gitconfig` before running Homebrew. It automatically backs up the whole
+file to `~/.local/state/worker/backups/git-url-rewrite.*/.gitconfig`, records its
+original path in `destination.txt`, then removes only that exact rule. No extra
+flag or manual Git commands are needed:
+
+```sh
+./make --dry-run --with-deskflow
+./make --with-deskflow
+```
+
+Dry-run only reads the config and reports the planned backup/removal. If Command
+Line Tools are missing, it defers the check instead of invoking Apple's Git stub.
+Normal runs stop for CLT installation before attempting the repair. Once repaired,
+reruns leave the file untouched and do not create another repair backup.
+
+Other values, narrower URL rewrites, file permissions, and explicit SSH remotes
+are preserved. Git handles locking and writes; backup or edit failures
+stop setup before Homebrew. Matching symlinked or non-writable configs are reported
+for manual repair rather than replacing a symlink or editing another target.
+Included files (such as `~/.gitconfig.local`), XDG configs, system configs, and other
+rewrite rules are outside this targeted migration. If the error persists, inspect
+`git config --show-origin --get-regexp '^url\..*\.insteadof$'` for another rule.
+The current snapshot no longer contains the blanket rewrite.
+
 ## Reruns and backups
 
 - Homebrew uses `--no-upgrade`, with automatic update and installation cleanup
@@ -101,10 +132,13 @@ Worker does not launch Deskflow, configure connections, or change macOS permissi
   prune other packages or trust entries. Worker does not uninstall packages or
   start Homebrew services.
 - Existing NVM/Oh My Zsh/plugin checkouts and installed editor extensions are kept.
-  Public clones bypass global Git URL rewrites so bootstrap does not need SSH keys.
+  Direct Git clones for NVM and Zsh bypass global/system Git configuration.
+  Homebrew tap clones use Homebrew's environment; the targeted legacy Git URL
+  repair above runs before Homebrew, including when Deskflow is not selected.
 - Git and Zsh snapshots are copied, not appended or linked to the checkout.
-  Identical files are untouched. Other existing files, including symlinks, are
-  preserved unless `--replace-config` is supplied.
+  Identical files are untouched. Apart from the targeted legacy Git URL repair,
+  other existing files, including symlinks, are preserved unless `--replace-config`
+  is supplied.
 - Replacement backups go into `~/.local/state/worker/backups/config.*/` with a
   `destination.txt` recording the original location. Symlinks are backed up as
   links; their targets are not overwritten. Restore a selected backup manually
@@ -166,8 +200,8 @@ code-insiders --list-extensions
 ```
 
 Sign in with `gh auth login`, then rerun worker if gh-dash was deferred. Configure
-SSH access for the preserved GitHub HTTPS-to-SSH rewrite. Launch Docker and finish
-its first-run setup when needed. Reopen Finder or log out to see preference changes.
+SSH access if your project remotes use SSH. Launch Docker and finish its first-run
+setup when needed. Reopen Finder or log out to see preference changes.
 
 Open [Amphetamine](https://apps.apple.com/us/app/amphetamine/id937984704) to choose
 its keep-awake sessions or triggers and whether it starts at login. Worker installs
@@ -194,8 +228,11 @@ Requires Bash, Zsh, Python 3, Git, and ShellCheck. Tests use temporary directori
 and mocked package managers/system commands. They exercise dry-run purity,
 reruns, backups, symlink handling, partial failures, fresh Homebrew bootstrapping,
 runtime compatibility, native Go binaries, manifests, optional Deskflow selection,
-inherited cleanup settings, and deferred authentication;
-they do not download packages or modify this Mac's preferences. A real fresh-Mac
+inherited cleanup settings, automatic Git URL repair/backup/failure handling, and
+deferred authentication; they do not download packages or modify this Mac's
+preferences. When Homebrew is
+available, an offline smoke test copies its launcher and substitutes a URL probe
+for the package manager to exercise the real environment filter. A real fresh-Mac
 installation remains a separate validation step.
 
 `WORKER_HOME` exists only to redirect managed file destinations in tests. It is

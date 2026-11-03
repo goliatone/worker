@@ -3,6 +3,7 @@
 import json
 import os
 from pathlib import Path
+import subprocess
 import sys
 
 name = Path(sys.argv[0]).name
@@ -36,12 +37,32 @@ elif name == 'brew':
         # install-cleanup setting above does not disable these separate switches.
         assert 'HOMEBREW_BUNDLE_INSTALL_CLEANUP' not in os.environ
         assert 'HOMEBREW_BUNDLE_FORCE_INSTALL_CLEANUP' not in os.environ
+        if os.environ.get('WORKER_TEST_PUBLIC_GIT'):
+            url = 'https://github.com/deskflow/homebrew-tap' if any(
+                arg.endswith('/Brewfile.deskflow') for arg in args) else 'https://github.com/Homebrew/homebrew-core'
+            # Resolve offline after modeling Homebrew dropping GIT_* overrides
+            # and Git reading its default global configuration.
+            git_env = {key: value for key, value in os.environ.items() if not key.startswith('GIT_')}
+            git_env.update(GIT_CONFIG_GLOBAL=os.environ['WORKER_TEST_GIT_CONFIG'], GIT_CONFIG_NOSYSTEM='1')
+            resolved = subprocess.check_output(
+                ['/usr/bin/git', 'ls-remote', '--get-url', url], cwd=state, env=git_env, text=True).strip()
+            assert resolved == url, f'Public bootstrap URL rewritten: {resolved}'
+            checked = load('public-git-urls', [])
+            checked.append(resolved); save('public-git-urls', checked)
         if any(arg.endswith('/Brewfile.deskflow') for arg in args):
             sys.exit(12 if os.environ.get('WORKER_TEST_FAIL_DESKFLOW') else 0)
         sys.exit(12 if os.environ.get('WORKER_TEST_FAIL_BREW') else 0)
     else:
         assert args == ['analytics', 'off'], args
 elif name == 'git':
+    if args[:2] == ['config', '--file']:
+        # Exercise Git's real parser/locking only against this test's fixtures.
+        Path(args[2]).resolve().relative_to(state.parent.resolve())
+        assert '--no-includes' in args and '--fixed-value' in args
+        assert '--get-all' in args or '--unset-all' in args
+        if '--unset-all' in args and os.environ.get('WORKER_TEST_FAIL_GIT_REPAIR'):
+            sys.exit(23)
+        sys.exit(subprocess.run(['/usr/bin/git', *args]).returncode)
     assert os.environ.get('GIT_CONFIG_GLOBAL') == '/dev/null'
     assert os.environ.get('GIT_CONFIG_NOSYSTEM') == '1'
     if args[0] == 'clone':
@@ -105,6 +126,8 @@ elif name == 'go':
     else:
         raise AssertionError(args)
 elif name == 'gh':
+    if os.environ.get('WORKER_TEST_PUBLIC_GIT'):
+        assert os.environ.get('GIT_CONFIG_GLOBAL') == os.environ['WORKER_TEST_GIT_CONFIG']
     if args == ['auth', 'status']:
         sys.exit(1 if os.environ.get('WORKER_TEST_NO_AUTH') else 0)
     elif args == ['extension', 'list']:
@@ -143,6 +166,10 @@ elif name == 'curl' and os.environ.get('WORKER_TEST_DOWNLOAD'):
     else:
         output.write_text('''#!/bin/bash
 set -e
+if [[ -n "${WORKER_TEST_PUBLIC_GIT:-}" ]]; then
+  resolved=$(/usr/bin/git ls-remote --get-url https://github.com/Homebrew/brew)
+  [[ "$resolved" == https://github.com/Homebrew/brew ]] || exit 128
+fi
 cp "$WORKER_TEST_BREW_TEMPLATE" "$WORKER_TEST_PREFIX/bin/brew"
 chmod 700 "$WORKER_TEST_PREFIX/bin/brew"
 ''')

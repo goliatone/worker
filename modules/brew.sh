@@ -17,20 +17,21 @@ setup_brew() {
     run xcode-select --install
     die 'Complete the Command Line Tools installation, then rerun ./make.'
   fi
+  repair_legacy_git_rewrite
 
   BREW_BIN=$(command -v brew || true)
   if [[ -z "$BREW_BIN" && -x "$BREW_PREFIX/bin/brew" ]]; then BREW_BIN="$BREW_PREFIX/bin/brew"; fi
   if [[ -z "$BREW_BIN" ]]; then
     BREW_BIN="$BREW_PREFIX/bin/brew"
     if [[ $DRY_RUN == 1 ]]; then
-      log '  Would download https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh and run it with /bin/bash.'
+      log '  Would download https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh and run it with /bin/bash, ignoring global/system Git configuration.'
     else
       installer=$(mktemp -t worker-homebrew)
       if ! curl --fail --show-error --silent --location https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh -o "$installer"; then
         rm -f "$installer"
         die 'Homebrew installer download failed.'
       fi
-      if ! /bin/bash "$installer"; then
+      if ! env GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 /bin/bash "$installer"; then
         rm -f "$installer"
         die 'Homebrew installation failed.'
       fi
@@ -54,6 +55,7 @@ setup_brew() {
   run "$BREW_BIN" analytics off
   log '  Includes Amphetamine (Mac App Store, 937984704); sign in to the App Store before its first install.'
   log '  App Store installation may request authentication. If it fails, finish signing in and rerun ./make.'
+  # The legacy URL rewrite was repaired above, before any Homebrew commands.
   run "$BREW_BIN" bundle install --no-upgrade --file="$ROOT/extensions/Brewfile"
   if [[ ${WITH_DESKFLOW:-0} == 1 ]]; then
     log 'Optional Deskflow: stable release from deskflow/tap; trust only its deskflow cask.'

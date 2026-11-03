@@ -42,6 +42,176 @@ class WorkerTests(unittest.TestCase):
     def commands(self):
         return self.log.read_text().splitlines()
 
+    def assert_read_only_commands(self):
+        self.assertTrue(all(s.startswith('uname ') or s == 'xcode-select -p' or
+                            (s.startswith('git config --file ') and
+                             ' --no-includes --fixed-value --get-all ' in s)
+                            for s in self.commands()), self.commands())
+
+    def configure_git_rewrite(self):
+        config = self.home / '.gitconfig'
+        config.write_text('[url "git@github.com:"]\n\tinsteadOf = https://github.com/\n')
+        self.env.update(GIT_CONFIG_GLOBAL=str(config), GIT_CONFIG_NOSYSTEM='1',
+                        WORKER_TEST_GIT_CONFIG=str(config), WORKER_TEST_PUBLIC_GIT='1')
+        # The fixture must reproduce the user's SSH rewrite before worker runs.
+        result = subprocess.run(['/usr/bin/git', 'ls-remote', '--get-url',
+                                 'https://github.com/deskflow/homebrew-tap'],
+                                cwd=self.base, env=self.env, text=True, capture_output=True, check=True)
+        self.assertEqual(result.stdout.strip(), 'git@github.com:deskflow/homebrew-tap')
+        return config
+
+    def configure_public_git_snapshot(self):
+        config = self.base / 'global.gitconfig'
+        config.write_bytes((ROOT / 'config/git/gitconfig').read_bytes())
+        # Keep the fixture from including the real user's private overrides.
+        subprocess.run(['/usr/bin/git', 'config', '--file', str(config),
+                        '--unset-all', 'include.path'], check=True)
+        self.env.update(GIT_CONFIG_GLOBAL=str(config), GIT_CONFIG_NOSYSTEM='1',
+                        WORKER_TEST_GIT_CONFIG=str(config), WORKER_TEST_PUBLIC_GIT='1')
+        return config
+
+    def test_captured_git_config_keeps_public_https_urls_on_reruns(self):
+        config = self.configure_public_git_snapshot()
+        original = config.read_bytes()
+        for _ in range(2):
+            self.run_worker('--with-deskflow', '--skip-extensions', '--skip-macos')
+        self.assertEqual(config.read_bytes(), original)
+        self.assertEqual(json.loads((self.state / 'public-git-urls').read_text()), [
+            'https://github.com/Homebrew/homebrew-core', 'https://github.com/deskflow/homebrew-tap',
+        ] * 2)
+
+    def test_legacy_git_rewrite_repair_survives_homebrew_environment_filter(self):
+        launcher = next((Path(p) for p in ['/opt/homebrew/bin/brew', '/usr/local/bin/brew']
+                         if Path(p).is_file()), None)
+        if launcher is None:
+            self.skipTest('An installed Homebrew launcher is needed for this offline smoke test')
+        config = self.configure_git_rewrite()
+        config.write_text(config.read_text() + '[user]\n\tname = Keep Me\n'
+                          '[url "git@github.com:"]\n\tinsteadOf = https://github.com/private-team/\n')
+        # Run the real launcher/filter, replacing its downstream package manager
+        # with an offline URL probe. Nothing in the installed Homebrew is run.
+        checkout = self.base / 'launcher only'
+        (checkout / 'bin').mkdir(parents=True)
+        shutil.copy2(launcher, checkout / 'bin/brew')
+        library = checkout / 'Library/Homebrew'
+        library.mkdir(parents=True)
+        (library / 'brew.sh').write_text('''#!/bin/bash
+printf '%s\\n' "${GIT_CONFIG_GLOBAL-unset}" "${GIT_CONFIG_NOSYSTEM-unset}"
+# Model the default global config after Homebrew's actual environment filter.
+export GIT_CONFIG_GLOBAL="$HOMEBREW_WORKER_TEST_CONFIG" GIT_CONFIG_NOSYSTEM=1
+exec /usr/bin/git ls-remote --get-url https://github.com/deskflow/homebrew-tap
+''')
+        def probe():
+            env = {key: value for key, value in self.env.items() if not key.startswith('HOMEBREW_')}
+            env.update(GIT_CONFIG_GLOBAL='/dev/null', GIT_CONFIG_NOSYSTEM='1',
+                       HOMEBREW_WORKER_TEST_CONFIG=str(config), XDG_CONFIG_HOME=str(self.base / 'xdg'))
+            result = subprocess.run([str(checkout / 'bin/brew'), 'bundle', 'install'],
+                                    cwd=self.base, env=env, text=True, capture_output=True, check=True)
+            return result.stdout.splitlines()
+        before = probe()
+        self.assertEqual(before[-1], 'git@github.com:deskflow/homebrew-tap')
+        if '/usr/bin/env -i' in launcher.read_text():
+            self.assertEqual(before[:2], ['unset', 'unset'])
+        self.run_worker('--with-deskflow', '--skip-extensions', '--skip-macos')
+        self.assertEqual(probe()[-1], 'https://github.com/deskflow/homebrew-tap')
+        self.assertIn('name = Keep Me', config.read_text())
+        self.assertIn('insteadOf = https://github.com/private-team/', config.read_text())
+
+    def test_legacy_git_repair_dry_run_backup_and_rerun(self):
+        config = self.configure_git_rewrite()
+        config.write_text(config.read_text() + '\tinsteadOf = https://github.com/\n'
+                          '\tinsteadOf = https://github.com/private-team/\n'
+                          '[user]\n\tname = Keep Me\n# Preserve this comment.\n')
+        config.chmod(0o640)
+        original = (config.read_bytes(), config.stat().st_mtime_ns)
+        result = self.run_worker('--dry-run', '--with-deskflow')
+        self.assertIn('Would back up', result.stdout)
+        self.assertIn('remove only url.git@github.com:.insteadOf', result.stdout)
+        self.assertEqual((config.read_bytes(), config.stat().st_mtime_ns), original)
+        self.assertEqual(list(self.home.iterdir()), [config])
+        self.assertEqual(list(self.state.iterdir()), [])
+        self.assert_read_only_commands()
+        self.log.write_text('')
+        # Also works when the old workaround is still passed on the command line.
+        self.run_worker('--with-deskflow', '--skip-extensions', '--skip-macos',
+                        GIT_CONFIG_GLOBAL='/dev/null', WORKER_TEST_PUBLIC_GIT='')
+        commands = self.commands()
+        repair = next(i for i, s in enumerate(commands) if ' --unset-all ' in s)
+        self.assertLess(repair, next(i for i, s in enumerate(commands) if s.startswith('brew ')))
+        backups = list((self.home / '.local/state/worker/backups').glob('git-url-rewrite.*'))
+        self.assertEqual(len(backups), 1)
+        self.assertEqual((backups[0] / '.gitconfig').read_bytes(), original[0])
+        self.assertEqual((backups[0] / 'destination.txt').read_text(), str(config) + '\n')
+        self.assertEqual(config.stat().st_mode & 0o777, 0o640)
+        self.assertIn('name = Keep Me', config.read_text())
+        self.assertIn('# Preserve this comment.', config.read_text())
+        self.assertIn('insteadOf = https://github.com/private-team/', config.read_text())
+        self.assertNotIn('insteadOf = https://github.com/\n', config.read_text())
+        repaired = (config.read_bytes(), config.stat().st_mtime_ns)
+        self.log.write_text('')
+        self.run_worker('--with-deskflow', '--skip-extensions', '--skip-macos')
+        self.assertEqual((config.read_bytes(), config.stat().st_mtime_ns), repaired)
+        self.assertEqual(list(backups[0].parent.iterdir()), backups)
+        self.assertFalse(any(' --unset-all ' in s for s in self.commands()))
+
+    def test_legacy_git_repair_preserves_nonmatching_rules_and_includes(self):
+        included = self.home / 'included.gitconfig'
+        included.write_text('[url "git@github.com:"]\n\tinsteadOf = https://github.com/\n')
+        config = self.home / '.gitconfig'
+        config.write_text('[url "git@github.com:"]\n\tinsteadOf = https://github.com/private-team/\n'
+                          '[url "ssh://git@github.com/"]\n\tinsteadOf = https://github.com/\n'
+                          '[include]\n\tpath = "' + str(included) + '"\n')
+        before = {p: p.read_bytes() for p in (config, included)}
+        self.run_worker('--skip-extensions', '--skip-macos')
+        self.assertEqual({p: p.read_bytes() for p in before}, before)
+        self.assertFalse((self.home / '.local/state/worker/backups').exists())
+
+    def test_legacy_git_repair_dry_run_without_clt(self):
+        config = self.configure_git_rewrite()
+        original = config.read_bytes()
+        result = self.run_worker('--dry-run', '--with-deskflow', WORKER_TEST_NO_CLT='1')
+        self.assertIn('after Command Line Tools are installed', result.stdout)
+        self.assertFalse(any(s.startswith('git ') for s in self.commands()))
+        self.assertEqual(config.read_bytes(), original)
+        self.assertEqual(list(self.home.iterdir()), [config])
+        self.assert_read_only_commands()
+
+    def test_legacy_git_repair_failures_stop_before_homebrew(self):
+        config = self.configure_git_rewrite()
+        original = config.read_bytes()
+        for failure in ['backup', 'git-write', 'locked', 'symlink', 'malformed']:
+            with self.subTest(failure=failure):
+                self.log.write_text('')
+                extra = {}
+                if failure == 'backup':
+                    (self.home / '.local').write_text('prevent backup directory creation')
+                elif failure == 'git-write':
+                    extra['WORKER_TEST_FAIL_GIT_REPAIR'] = '1'
+                elif failure == 'locked':
+                    (self.home / '.gitconfig.lock').write_text('another writer')
+                elif failure == 'symlink':
+                    target = self.base / 'linked.gitconfig'
+                    config.rename(target)
+                    config.symlink_to(target)
+                else:
+                    config.write_text('[invalid\n')
+                before = config.read_bytes()
+                self.run_worker('--with-deskflow', expected=1, **extra)
+                self.assertEqual(config.read_bytes(), before)
+                self.assertFalse(any(s.startswith(('brew ', 'curl ')) for s in self.commands()))
+                if failure == 'backup':
+                    (self.home / '.local').unlink()
+                elif failure == 'locked':
+                    lock = self.home / '.gitconfig.lock'
+                    self.assertEqual(lock.read_text(), 'another writer')
+                    lock.unlink()
+                elif failure == 'symlink':
+                    self.assertTrue(config.is_symlink())
+                    config.unlink()
+                    target.rename(config)
+                elif failure == 'malformed':
+                    config.write_bytes(original)
+
     def test_dry_run_has_no_writes_or_external_installer_calls(self):
         result = self.run_worker('--dry-run')
         self.assertIn('Nothing was changed', result.stdout)
@@ -119,7 +289,7 @@ class WorkerTests(unittest.TestCase):
         self.assertIn('Amphetamine', result.stdout)
         self.assertIn('Brewfile.deskflow', result.stdout)
         self.assertEqual(before, snapshot())
-        self.assertTrue(all(s.startswith('uname ') for s in self.commands()), self.commands())
+        self.assert_read_only_commands()
         self.log.write_text('')
         self.run_worker('--with-deskflow', '--skip-extensions', '--skip-macos')
         self.assertEqual(before, snapshot())
@@ -255,6 +425,8 @@ builtin source "$WORKER_TEST_ZSHRC"
     def test_homebrew_bootstrap_and_download_failure_cleanup(self):
         # Run only the production brew module against a fake prefix. The curl
         # shim writes a tiny fixture installer that only copies our brew shim.
+        config = self.configure_public_git_snapshot()
+        original_config = config.read_bytes()
         brew = self.prefix / 'bin/brew'
         template = self.base / 'brew-template'
         shutil.copy2(brew, template)
@@ -285,6 +457,7 @@ setup_brew
                     self.assertFalse(any(s.startswith('brew bundle ') for s in self.commands()))
         self.assertTrue(brew.exists())
         self.assertTrue(any(s.startswith('brew bundle install ') for s in self.commands()))
+        self.assertEqual(config.read_bytes(), original_config)
 
     def test_failed_checkout_leaves_no_partial_destination(self):
         self.run_worker(expected=1, WORKER_TEST_FAIL_CHECKOUT='1')

@@ -9,6 +9,46 @@ run() {
   if [[ $DRY_RUN == 0 ]]; then "$@"; fi
 }
 
+# Migrate only the blanket rewrite shipped by older worker snapshots. Homebrew
+# filters GIT_* overrides, so this must happen on disk before its first command.
+repair_legacy_git_rewrite() {
+  local config="$WORKER_HOME/.gitconfig" key='url.git@github.com:.insteadOf'
+  local value='https://github.com/' status backup_dir
+  [[ -f "$config" ]] || return 0
+  # Apple's Git can open the CLT installer when the tools are missing. A dry run
+  # must not invoke that stub; normal runs already checked CLT in setup_brew.
+  if [[ $DRY_RUN == 1 ]] && ! xcode-select -p >/dev/null 2>&1; then
+    log "  Would check $config for the legacy GitHub URL rewrite after Command Line Tools are installed."
+    return 0
+  fi
+  if git config --file "$config" --no-includes --fixed-value --get-all "$key" "$value" >/dev/null; then
+    :
+  else
+    status=$?
+    [[ $status == 1 ]] && return 0
+    die "Could not inspect Git configuration at $config; no repair was attempted."
+  fi
+  [[ ! -L "$config" && -O "$config" && -w "$config" ]] ||
+    die "Legacy GitHub rewrite found in $config, but automatic repair requires a writable regular file owned by you (not a symlink)."
+  if [[ $DRY_RUN == 1 ]]; then
+    log "  Would back up $config under $WORKER_HOME/.local/state/worker/backups/git-url-rewrite.*/ and remove only $key = $value."
+    return 0
+  fi
+  if ! mkdir -p "$WORKER_HOME/.local/state/worker/backups" ||
+     ! backup_dir=$(mktemp -d "$WORKER_HOME/.local/state/worker/backups/git-url-rewrite.XXXXXX") ||
+     ! cp -p "$config" "$backup_dir/.gitconfig" ||
+     ! printf '%s\n' "$config" > "$backup_dir/destination.txt"; then
+    die "Could not back up $config; no repair was attempted."
+  fi
+  log "  Git URL rewrite backup: $backup_dir"
+  # Git locks and atomically updates this file, preserving other values. Do not
+  # bypass an existing .lock or modify anything reached through an include.
+  if ! git config --file "$config" --no-includes --fixed-value --unset-all "$key" "$value"; then
+    die "Could not repair $config. Backup: $backup_dir/.gitconfig. Resolve the Git error and rerun."
+  fi
+  log "  Repaired legacy GitHub HTTPS-to-SSH rewrite in $config."
+}
+
 # Copies allow moving the checkout later. Never silently replace existing files.
 install_file() {
   local src=$1 dst=$2 parent backup_dir temporary
