@@ -5,11 +5,12 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import tarfile
 import tempfile
 
 from worker_files import destination, install
 from go_metadata import validate_binary
-from custom_workflow import setup_custom
+from custom_workflow import build_environment, setup_custom
 
 
 def setup(root, home, arch, replace=False):
@@ -41,7 +42,7 @@ def setup(root, home, arch, replace=False):
             continue
         with tempfile.TemporaryDirectory(prefix='worker-go-') as temporary:
             print(f'  Build {spec} for darwin/{arch}', flush=True)
-            env = {**os.environ, 'GOBIN': temporary, 'GOOS': 'darwin', 'GOARCH': arch, 'GOWORK': 'off'}
+            env = {**build_environment(arch, private=False), 'GOBIN': temporary}
             subprocess.run(['go', 'install', spec], env=env, cwd=temporary, stdin=subprocess.DEVNULL, check=True)
             built = Path(temporary) / binary
             validate_binary(built, package, arch, version)
@@ -59,6 +60,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     try:
         sys.exit(setup(args.root, args.home, args.arch, args.replace_config))
-    except (ValueError, OSError, subprocess.CalledProcessError) as error:
+    except (ValueError, OSError, tarfile.TarError, subprocess.CalledProcessError) as error:
         print(f'Error: Workflow tools: {error}', file=sys.stderr)
         sys.exit(1)

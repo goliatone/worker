@@ -46,6 +46,8 @@ Options:
 - `--with-backend`: PostgreSQL 16, NATS, LocalStack's `lstk`, and development utilities.
 - `--with-access`: 1Password/CLI and Tailscale; requires macOS 13+.
 - `--with-desktop`: selected desktop apps, Nerd Font, and iTerm profile; macOS 14+.
+- `--taps-file FILE`: add GitHub taps from a local list; paths are relative to
+  your current directory. This registers taps without installing their packages.
 - `--dotfiles-gist URL --dotfiles-revision SHA`: install an exact shared-dotfiles
   revision and migrate recognized Git/Zsh include hooks with backups.
 - `--help`: show usage.
@@ -83,6 +85,59 @@ The selected pnpm 10 release requires Node >=18.12. If an older NVM default is
 present, worker stops before installing pnpm and explains how to select LTS; it
 does not silently change an existing default. `PNPM_HOME` is on PATH before its
 directory exists, so the first global package installation works.
+
+## Custom Homebrew taps
+
+Add one GitHub repository URL per line to `extensions/taps.txt`. The supplied
+file contains commented examples; uncomment or replace them with your selections:
+
+```text
+# My custom taps
+github.com/goliatone/homebrew-tap
+https://github.com/nats-io/homebrew-nats-tools
+```
+
+```sh
+./make --dry-run --taps-file extensions/taps.txt
+./make --taps-file extensions/taps.txt
+# Combine with other bundles as needed:
+./make --dry-run --taps-file extensions/taps.txt --with-backend --with-workflow
+```
+
+This still runs the normal core setup. Without `--taps-file`, worker ignores the
+list. Empty lists are allowed. Blank lines, surrounding spaces/tabs, and whole-line
+`#` comments are ignored; Windows line endings and a missing final newline work.
+GitHub URLs may omit `https://` and include `.git` or a trailing slash. Equivalent
+entries are deduplicated. Inline comments, credentials, SSH input URLs, URL query
+strings/fragments, non-GitHub hosts, and tap-name shorthand are not accepted.
+
+Worker validates the entire list before any installation or Git repair. For
+`github.com/goliatone/homebrew-tap`, it derives the tap name `goliatone/tap` and
+uses the explicit HTTPS repository URL. Repository spelling is preserved: a
+repository actually named `homebree-tap` maps to `goliatone/homebree-tap`; worker
+does not silently correct it. Two different repositories mapping to the same tap
+name are rejected. Homebrew naming is described in its [tap documentation](https://docs.brew.sh/Taps).
+
+Dry-run prints the plan without invoking Homebrew or checking remote availability
+or existing origins. On apply, worker checks all requested installed tap origins
+before adding missing taps or installing Brewfile packages. Matching GitHub
+HTTPS/SSH origins are kept as-is. Conflicting, unreadable, or ambiguous origins
+stop for manual review; worker requires exactly one repository origin, counting
+local Git includes and empty URL entries. A scheme-less stored origin is a local
+filesystem path and does not match a GitHub repository. Incomplete tap directories
+without Git metadata also stop for review. Worker never switches a tap's origin.
+CLT installation, Homebrew bootstrap, or the existing Git URL repair may already
+have completed.
+
+Reruns skip matching taps; a failed addition stops setup and can be retried with
+the same command. Successfully added taps remain installed. Removing a line or
+omitting the flag does not untap anything. Worker does not grant whole-tap trust,
+upgrade tapped repositories, or install every package they contain. Regular
+`brew update` behavior remains independent of worker.
+
+To install a particular package as part of setup, add its fully qualified name
+to a selected Brewfile, for example `brew "goliatone/tap/YOUR_FORMULA"`. Private
+taps require working Git HTTPS authentication; the list never stores credentials.
 
 ## Optional AI apps
 
@@ -207,6 +262,10 @@ build with GitHub's error. Source archives are downloaded only during setup,
 checked for unsafe paths/links, and built in temporary directories. Go credentials
 and private-module settings apply only to the build subprocess; no global Git or
 Go authentication settings are written.
+The archive request explicitly targets github.com even when `GH_HOST` names a
+work GitHub Enterprise server. Builds ignore inherited Git URL overrides and
+`GOFLAGS`; downloads ignore `.curlrc` so its output/redirect options cannot alter
+the setup operation.
 
 Builds are verified for package and native macOS architecture before installation.
 Their commit, architecture, binary hash, and completion hash are recorded under
@@ -222,6 +281,8 @@ a command only; worker does not switch the active Go toolchain. `ai-shot` and
 `ctx.sh` are copied with executable permissions into `~/bin`, which worker's Zsh
 configuration already places on PATH. The ctx completion is taken from the same
 upstream source revision as its binary.
+The captured `ai-shot` also propagates ImageMagick failures instead of reporting
+output files that were never created.
 
 ### Agent settings and skills
 
@@ -241,6 +302,8 @@ use `$HOME`; the referenced project checkouts must exist when a skill needs them
 Personal artifact-template and project-specific skills are not part of this shared
 snapshot. Updating a captured file also requires updating its SHA-256 entry in
 the manifest; an unmatched snapshot fails before installing agent files.
+All agent destinations are checked before copying settings or skills. A symlinked
+parent directory stops this bundle for review without writing through the link.
 
 Sources: [Codex configuration](https://developers.openai.com/codex/config-basic),
 [Codex skill locations](https://developers.openai.com/codex/skills),
@@ -303,7 +366,8 @@ Selecting a gist explicitly enables a narrow include-hook migration on existing
 worker `.zshrc`/`.gitconfig` files. Both layouts are checked before either is
 edited; recognized hooks are inserted once with backups, preserving unrelated
 content and leaving local overrides last. Symlinked or ambiguous startup configs
-stop for review rather than being rewritten. Fresh worker snapshots already have
+and invalid merged syntax stop for review rather than being rewritten. Commented
+hooks are not treated as active hooks. Fresh worker snapshots already have
 these hooks. Early shared Zsh settings configure initialization; late/local
 settings cannot retroactively change plugins that have already loaded.
 
@@ -320,6 +384,15 @@ The installed source revision and hashes live in
 fetch and compare again without rewriting matching files. Shell startup never
 performs network requests. A download/validation failure leaves the shared layer
 unchanged; preceding core/package setup steps are not rolled back.
+The shared files, startup hooks, and receipt are prepared as one group: every
+destination is checked and all needed backups and temporary files are prepared
+before replacement begins. A caught write failure restores files already changed
+in that group. The same protection covers each custom tool's binary, completion,
+and receipt, and agent file installation. If rollback also fails, worker reports
+the affected paths and retains the original backups for manual recovery.
+This is not a transaction across power
+loss, forced termination, or simultaneous edits; retain the backups and rerun the
+same command after resolving a failure.
 
 ## Reruns and backups
 
@@ -340,7 +413,9 @@ unchanged; preceding core/package setup steps are not rolled back.
 - Replacement backups go into `~/.local/state/worker/backups/config.*/` with a
   `destination.txt` recording the original location. Symlinks are backed up as
   links; their targets are not overwritten. Restore a selected backup manually
-  after reviewing its destination. There is no automatic rollback of packages.
+  after reviewing its destination. A file itself named `destination.txt` is saved
+  in `original/destination.txt` inside its backup directory to avoid overwriting
+  it with recovery metadata. There is no automatic rollback of packages.
 - Go tool versions are explicit; updating their manifest deliberately changes
   those binaries. Existing Go binaries are checked for package, version, macOS,
   and CPU architecture; corrupt or incompatible copies are rebuilt for this Mac.

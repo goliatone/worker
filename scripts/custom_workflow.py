@@ -9,7 +9,7 @@ import tarfile
 import tempfile
 
 from go_metadata import validate_binary
-from worker_files import destination, digest, install, status
+from worker_files import destination, digest, install_many
 
 
 def extract(archive, target):
@@ -42,7 +42,9 @@ def extract(archive, target):
 
 def build_environment(arch, private):
     env = {**os.environ, 'GOOS': 'darwin', 'GOARCH': arch, 'GOWORK': 'off', 'GOFLAGS': '',
-           'GIT_CONFIG_GLOBAL': '/dev/null', 'GIT_CONFIG_NOSYSTEM': '1', 'GIT_TERMINAL_PROMPT': '0'}
+           'GIT_CONFIG_GLOBAL': '/dev/null', 'GIT_CONFIG_NOSYSTEM': '1', 'GIT_TERMINAL_PROMPT': '0',
+           'GIT_CONFIG_COUNT': '0'}
+    env.pop('GIT_CONFIG_PARAMETERS', None)
     if private:
         env.update(GIT_CONFIG_COUNT='1', GIT_CONFIG_KEY_0='credential.https://github.com.helper',
                    GIT_CONFIG_VALUE_0='!gh auth git-credential')
@@ -62,8 +64,9 @@ def validate_manifest(entries):
                 entry.get('package') not in ('.', './cmd/ctx', './cmd/gql-gen') or
                 not isinstance(entry.get('private'), bool)):
             raise ValueError('Invalid custom tool manifest entry.')
-        assets = entry.get('assets', {})
-        if assets and (entry['name'] != 'ctx' or assets != {'internal/ctxassets/defaults/assets/zsh/_ctx': '.zsh/completions/_ctx'}):
+        expected_assets = ({'internal/ctxassets/defaults/assets/zsh/_ctx': '.zsh/completions/_ctx'}
+                           if entry['name'] == 'ctx' else {})
+        if entry.get('assets') != expected_assets or not isinstance(entry.get('go_path'), str):
             raise ValueError('Unsupported custom tool asset mapping.')
 
 
@@ -83,7 +86,7 @@ def setup_custom(root, home, arch, replace=False):
                 receipt = json.loads(receipt_file.read_text())
             except ValueError:
                 pass
-        if not isinstance(receipt, dict):
+        if not isinstance(receipt, dict) or not isinstance(receipt.get('assets', {}), dict):
             receipt = {}
         wanted = {'repo': entry['repo'], 'revision': entry['revision'], 'arch': arch,
                   'package': entry['go_path']}
@@ -111,9 +114,10 @@ def setup_custom(root, home, arch, replace=False):
             archive = temporary / 'source.tar.gz'
             if entry['private']:
                 with archive.open('wb') as output:
-                    subprocess.run(['gh', 'api', f'repos/{entry["repo"]}/tarball/{entry["revision"]}'], stdout=output, check=True, stdin=subprocess.DEVNULL)
+                    subprocess.run(['gh', 'api', f'repos/{entry["repo"]}/tarball/{entry["revision"]}',
+                                    '--hostname', 'github.com'], stdout=output, check=True, stdin=subprocess.DEVNULL)
             else:
-                subprocess.run(['curl', '--fail', '--silent', '--show-error', '--proto', '=https',
+                subprocess.run(['curl', '--disable', '--fail', '--silent', '--show-error', '--proto', '=https',
                                 '--connect-timeout', '15', '--max-time', '120', '--max-filesize', '67108864',
                                 '--url', f'https://codeload.github.com/{entry["repo"]}/tar.gz/{entry["revision"]}',
                                 '-o', str(archive)], check=True, stdin=subprocess.DEVNULL)
@@ -131,12 +135,9 @@ def setup_custom(root, home, arch, replace=False):
             validate_binary(binary, entry['go_path'], arch)
             data = binary.read_bytes()
             outputs = [(entry['destination'], data, 0o700)] + [(p, d, 0o600) for p, d in assets.items()]
-            if not replace and any(status(destination(home, p), d, mode) == 'different' for p, d, mode in outputs):
-                print(f'Notice: Preserved differing {name} binary/completion; use --replace-config. No files for this tool were changed.')
-                deferred = True
-                continue
-            for p, d, mode in outputs:
-                install(home, p, d, mode=mode, replace=replace)
+            prepared = [(p, d, mode, replace) for p, d, mode in outputs]
             wanted.update(sha256=digest(data), assets={p: digest(d) for p, d in assets.items()})
-            install(home, receipt_path, (json.dumps(wanted, indent=2, sort_keys=True) + '\n').encode(), replace=True)
+            prepared.append((receipt_path, (json.dumps(wanted, indent=2, sort_keys=True) + '\n').encode(), 0o600, True))
+            if not install_many(home, prepared, preserve_group=True):
+                deferred = True
     return deferred

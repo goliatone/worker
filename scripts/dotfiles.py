@@ -7,7 +7,7 @@ import subprocess
 import sys
 import tempfile
 
-from worker_files import destination, digest, install, status
+from worker_files import destination, digest, install_many
 
 FILES = ('zshrc.shared', 'gitconfig.shared', 'zshrc.shared.pre')
 EARLY = '[[ ! -r "$HOME/.config/worker/zshrc.shared.pre" ]] || source "$HOME/.config/worker/zshrc.shared.pre"\n'
@@ -26,7 +26,7 @@ def parse_source(url, revision):
 
 def fetch(url, revision):
     gist_id, revision = parse_source(url, revision)
-    result = subprocess.run(['curl', '--fail', '--silent', '--show-error', '--proto', '=https',
+    result = subprocess.run(['curl', '--disable', '--fail', '--silent', '--show-error', '--proto', '=https',
                              '--connect-timeout', '15', '--max-time', '60', '--max-filesize', '1048576',
                              '--header', 'Accept: application/vnd.github+json',
                              '--url', f'https://api.github.com/gists/{gist_id}/{revision}'],
@@ -36,10 +36,12 @@ def fetch(url, revision):
     response = json.loads(result.stdout)
     if not isinstance(response, dict):
         raise ValueError('Expected a GitHub gist response object.')
-    if response.get('id', '').lower() != gist_id or response.get('truncated'):
+    response_id = response.get('id')
+    if not isinstance(response_id, str) or response_id.lower() != gist_id or response.get('truncated'):
         raise ValueError('Gist response is mismatched or truncated.')
     history = response.get('history', [])
-    if not isinstance(history, list) or not history or not isinstance(history[0], dict) or history[0].get('version', '').lower() != revision:
+    if (not isinstance(history, list) or not history or not isinstance(history[0], dict) or
+            not isinstance(history[0].get('version'), str) or history[0]['version'].lower() != revision):
         raise ValueError('Gist response does not match the requested revision.')
     entries = response.get('files', {})
     if not isinstance(entries, dict) or not all(name in entries for name in FILES[:2]):
@@ -52,7 +54,8 @@ def fetch(url, revision):
         if not isinstance(item, dict):
             raise ValueError(f'Invalid gist file entry: {name}')
         content = item.get('content')
-        if item.get('filename') != name or item.get('truncated') or not isinstance(content, str):
+        if (item.get('filename') != name or item.get('truncated') or not isinstance(content, str) or
+                item.get('encoding', 'utf-8') != 'utf-8'):
             raise ValueError(f'Missing or truncated gist content: {name}')
         data = content.encode('utf-8')
         if b'\0' in data or len(data) > 262144:
@@ -69,21 +72,28 @@ def validate(files):
         for name, data in files.items():
             path = Path(temporary) / name
             path.write_bytes(data)
-            command = ['/bin/zsh', '-dfn', str(path)] if name.startswith('zshrc.') else [
+            command = ['/bin/zsh', '-dfn', str(path)] if name == '.zshrc' or name.startswith('zshrc.') else [
                 'git', 'config', '--file', str(path), '--no-includes', '--list']
             result = subprocess.run(command, capture_output=True, text=True)
             if result.returncode:
                 raise ValueError(f'Invalid syntax in {name}; no shared files were changed.')
-            if name == 'gitconfig.shared' and 'url.git@github.com:.insteadof=https://github.com/' in result.stdout.splitlines():
+            if name in ('.gitconfig', 'gitconfig.shared') and 'url.git@github.com:.insteadof=https://github.com/' in result.stdout.splitlines():
                 raise ValueError('Shared Git config would restore the legacy GitHub HTTPS-to-SSH rewrite.')
 
 
+def occurrences(text, block):
+    # Comments or substrings of other commands are not active worker hooks.
+    return list(re.finditer(r'(?m)^' + re.escape(block), text))
+
+
 def add_before(text, line, anchor, label):
-    if text.count(line) == 1 and text.count(anchor) == 1 and text.index(line) < text.index(anchor):
+    lines, anchors = occurrences(text, line), occurrences(text, anchor)
+    if len(lines) == 1 and len(anchors) == 1 and lines[0].start() < anchors[0].start():
         return text
-    if line.strip() in text or text.count(anchor) != 1:
+    if line.strip() in text or len(anchors) != 1:
         raise ValueError(f'Ambiguous {label} layout; add the shared hook before the local override manually.')
-    return text.replace(anchor, line + '\n' + anchor, 1)
+    offset = anchors[0].start()
+    return text[:offset] + line + '\n' + text[offset:]
 
 
 def hook_plans(home):
@@ -96,16 +106,18 @@ def hook_plans(home):
         if not text.endswith('\n'):
             text += '\n'
         if name == '.zshrc':
-            if text.count(LOCAL) != 1 or any(line.strip() and not line.lstrip().startswith('#')
-                                           for line in text.split(LOCAL, 1)[-1].splitlines()):
+            local_hooks = occurrences(text, LOCAL)
+            if len(local_hooks) != 1 or any(line.strip() and not line.lstrip().startswith('#')
+                                          for line in text[local_hooks[0].end():].splitlines()):
                 raise ValueError('Ambiguous .zshrc: expected the worker .zshrc.local hook last.')
             for hook, anchor in ((EARLY, 'typeset -U path fpath\n'), (LATE, LOCAL)):
                 if hook not in text and '.config/worker/' + ('zshrc.shared.pre' if hook == EARLY else 'zshrc.shared"') in text:
                     raise ValueError('Unrecognized shared Zsh hook; review it before migration.')
                 text = add_before(text, hook, anchor, '.zshrc')
         else:
-            if text.count(GIT_LOCAL) != 1 or any(line.strip() and not line.lstrip().startswith(('#', ';'))
-                                               for line in text.split(GIT_LOCAL, 1)[-1].splitlines()):
+            local_hooks = occurrences(text, GIT_LOCAL)
+            if len(local_hooks) != 1 or any(line.strip() and not line.lstrip().startswith(('#', ';'))
+                                          for line in text[local_hooks[0].end():].splitlines()):
                 raise ValueError('Ambiguous .gitconfig: expected the worker .gitconfig.local include last.')
             if GIT_SHARED not in text and '.config/worker/gitconfig.shared' in text:
                 raise ValueError('Unrecognized shared Git include; review it before migration.')
@@ -119,19 +131,15 @@ def setup(home, url, revision, replace=False):
     files = fetch(url, revision)
     validate(files)
     hooks = hook_plans(home)  # Validate both hooks before installing either.
-    for name, data in files.items():
-        if status(destination(home, '.config/worker/' + name), data) == 'different' and not replace:
-            print(f'Notice: Preserved differing {name}; shared files and hooks were not changed. Use --replace-config after review.')
-            return
-    for name, data in files.items():
-        install(home, '.config/worker/' + name, data, replace=replace)
+    validate(hooks)
+    entries = [('.config/worker/' + name, data, 0o600, replace) for name, data in files.items()]
     # Selecting a gist explicitly opts into this narrow, backed-up hook migration.
-    for name, data in hooks.items():
-        install(home, name, data, replace=True)
+    entries.extend((name, data, 0o600, True) for name, data in hooks.items())
     receipt = {'gist': gist_id, 'revision': revision,
                'files': {name: digest(data) for name, data in files.items()}}
-    install(home, '.local/state/worker/dotfiles.json',
-            (json.dumps(receipt, sort_keys=True, indent=2) + '\n').encode(), replace=True)
+    entries.append(('.local/state/worker/dotfiles.json',
+                    (json.dumps(receipt, sort_keys=True, indent=2) + '\n').encode(), 0o600, True))
+    install_many(home, entries, preserve_group=True)
 
 
 def main():

@@ -1,0 +1,3 @@
+# Optional GitHub tap repositories, one per line. Uncomment your selections.
+# github.com/goliatone/homebrew-tap
+# https://github.com/nats-io/homebrew-nats-tools

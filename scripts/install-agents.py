@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import sys
 
-from worker_files import digest, install
+from worker_files import digest, install_many
 
 
 def setup(root, home, replace=False):
@@ -21,9 +21,8 @@ def setup(root, home, replace=False):
         data = (root / source).read_bytes()
         if digest(data) != entry['sha256']:
             raise ValueError(f'Agent snapshot checksum mismatch: {source}')
-        prepared.append((target, data, 0o700 if entry.get('executable') else 0o600))
-    for target, data, mode in prepared:
-        install(home, target, data, mode=mode, replace=replace)
+        prepared.append((target, data, 0o700 if entry.get('executable') else 0o600, replace))
+    install_many(home, prepared)
 
 
 if __name__ == '__main__':

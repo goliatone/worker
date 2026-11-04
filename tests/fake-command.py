@@ -19,6 +19,11 @@ def load(key, default=None):
     p = state / key
     return json.loads(p.read_text()) if p.exists() else default
 
+def tap_directory(tap):
+    owner, repository = tap.split('/')
+    assert all(part and '/' not in part and part not in ('.', '..') for part in (owner, repository))
+    return Path(os.environ['WORKER_TEST_PREFIX']) / 'Library/Taps' / owner / ('homebrew-' + repository)
+
 if name == 'uname':
     print(os.environ.get('WORKER_TEST_ARCH', 'arm64') if args == ['-m'] else os.environ.get('WORKER_TEST_OS', 'Darwin'))
 elif name == 'sysctl':
@@ -32,6 +37,34 @@ elif name == 'xcode-select':
 elif name == 'brew':
     if args == ['--prefix']:
         print(os.environ.get('WORKER_TEST_REPORTED_PREFIX', os.environ['WORKER_TEST_PREFIX']))
+    elif args == ['tap']:
+        if os.environ.get('WORKER_TEST_FAIL_TAP_LIST'):
+            sys.exit(23)
+        base = Path(os.environ['WORKER_TEST_PREFIX']) / 'Library/Taps'
+        for path in sorted(base.glob('*/*')):
+            # Homebrew's Tap.installed enumerates directories, even when a
+            # checkout is incomplete or uses a .git pointer file.
+            if path.is_dir():
+                print(path.parent.name + '/' + path.name.removeprefix('homebrew-'))
+    elif args[0] == '--repository':
+        assert len(args) == 2
+        print(tap_directory(args[1]))
+    elif args[0] == 'tap':
+        assert len(args) == 3 and not args[1].startswith('-'), args
+        assert os.environ['HOMEBREW_NO_AUTO_UPDATE'] == '1'
+        assert os.environ['HOMEBREW_NO_INSTALL_CLEANUP'] == '1'
+        assert 'HOMEBREW_BUNDLE_INSTALL_CLEANUP' not in os.environ
+        assert 'HOMEBREW_BUNDLE_FORCE_INSTALL_CLEANUP' not in os.environ
+        if args[1] == os.environ.get('WORKER_TEST_FAIL_TAP'):
+            sys.exit(24)
+        if os.environ.get('WORKER_TEST_CONSUME_STDIN'):
+            sys.stdin.read()
+        checkout = tap_directory(args[1])
+        assert not checkout.exists(), 'An installed tap must be skipped'
+        (checkout / '.git/objects').mkdir(parents=True)
+        (checkout / '.git/refs').mkdir()
+        (checkout / '.git/HEAD').write_text('ref: refs/heads/main\n')
+        (checkout / '.git/config').write_text('[remote "origin"]\nurl = ' + args[2] + '\n')
     elif args[:2] == ['bundle', 'install']:
         assert '--no-upgrade' in args
         assert os.environ['HOMEBREW_NO_AUTO_UPDATE'] == '1'
@@ -62,6 +95,9 @@ elif name == 'brew':
     else:
         assert args == ['analytics', 'off'], args
 elif name == 'git':
+    if args[0] == '-C' and args[2:] == ['config', '--local', '--includes', '--get-all', 'remote.origin.url']:
+        Path(args[1]).resolve().relative_to(state.parent.resolve())
+        sys.exit(subprocess.run(['/usr/bin/git', *args]).returncode)
     if args[:2] == ['config', '--file']:
         # Exercise Git's real parser/locking only against this test's fixtures.
         Path(args[2]).resolve().relative_to(state.parent.resolve())
@@ -127,6 +163,10 @@ elif name == 'go':
         if os.environ.get('WORKER_TEST_CONSUME_STDIN'): sys.stdin.read()
         assert os.environ.get('GOOS') == 'darwin'
         assert os.environ.get('GOARCH') == ('amd64' if os.environ.get('WORKER_TEST_ARCH') == 'x86_64' else 'arm64')
+        if 'worker-go-' in os.environ['GOBIN']:
+            assert os.environ['GOFLAGS'] == ''
+            assert os.environ['GIT_CONFIG_COUNT'] == '0'
+            assert 'GIT_CONFIG_PARAMETERS' not in os.environ
         package = args[1]
         if package == os.environ.get('WORKER_TEST_FAIL_GO_INSTALL'):
             sys.exit(19)
@@ -137,7 +177,10 @@ elif name == 'go':
     elif args[0] == 'build':
         assert os.environ['GOOS'] == 'darwin'
         assert os.environ['GOWORK'] == 'off'
+        assert os.environ['GOFLAGS'] == ''
+        assert 'GIT_CONFIG_PARAMETERS' not in os.environ
         module = Path('go.mod').read_text().splitlines()[0].split()[1]
+        assert os.environ['GIT_CONFIG_COUNT'] == ('1' if 'goliatone/' in module else '0')
         if module == os.environ.get('WORKER_TEST_FAIL_GO_BUILD'):
             sys.exit(19)
         package = module + (args[-1][1:] if args[-1] != '.' else '')
@@ -155,6 +198,7 @@ elif name == 'gh':
     elif args[:2] == ['extension', 'install']:
         save('gh-dash', True)
     elif args[0] == 'api' and '/tarball/' in args[1]:
+        assert args[2:] == ['--hostname', 'github.com']
         repo = args[1].split('/')[2]
         if repo == os.environ.get('WORKER_TEST_FAIL_ARCHIVE'):
             sys.exit(22)
@@ -198,6 +242,7 @@ elif name == 'defaults':
     else:
         raise AssertionError(args)
 elif name == 'curl' and '--url' in args:
+    assert args[0] == '--disable'
     url = args[args.index('--url') + 1]
     if os.environ.get('WORKER_TEST_FAIL_CURL'):
         sys.exit(22)

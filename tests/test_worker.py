@@ -477,6 +477,8 @@ builtin source "$WORKER_TEST_ZSHRC"
         template = self.base / 'brew-template'
         shutil.copy2(brew, template)
         brew.unlink()
+        taps = self.base / 'bootstrap-taps.txt'
+        taps.write_text('github.com/example/homebrew-bootstrap\n')
         script = '''
 set -Eeuo pipefail
 ROOT=$WORKER_TEST_ROOT
@@ -484,7 +486,10 @@ DRY_RUN=0
 WORKER_LOADED=1
 WARNINGS=0
 BREW_PREFIX=$WORKER_TEST_PREFIX
+TAPS_FILE=$WORKER_TEST_TAPS
 source "$ROOT/utils.sh"
+source "$ROOT/modules/taps.sh"
+load_custom_taps
 source "$ROOT/modules/brew.sh"
 setup_brew
 '''
@@ -493,6 +498,7 @@ setup_brew
                 self.log.write_text('')
                 result = subprocess.run([BASH, '-c', script], env={**self.env,
                     'WORKER_TEST_ROOT': str(ROOT), 'WORKER_TEST_DOWNLOAD': mode,
+                    'WORKER_TEST_TAPS': str(taps),
                     'WORKER_TEST_BREW_TEMPLATE': str(template)}, capture_output=True, text=True)
                 self.assertEqual(result.returncode, 0 if mode == 'success' else 1, result.stdout + result.stderr)
                 downloads = [s.rsplit(' -o ', 1)[1] for s in self.commands() if s.startswith('curl ')]
@@ -502,6 +508,7 @@ setup_brew
                     self.assertFalse(brew.exists())
                     self.assertFalse(any(s.startswith('brew bundle ') for s in self.commands()))
         self.assertTrue(brew.exists())
+        self.assertIn('brew tap example/bootstrap https://github.com/example/homebrew-bootstrap', self.commands())
         self.assertTrue(any(s.startswith('brew bundle install ') for s in self.commands()))
         self.assertEqual(config.read_bytes(), original_config)
 

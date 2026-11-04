@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tarfile
 import unittest
+from unittest.mock import patch
 
 import test_worker
 
@@ -15,7 +16,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
 import custom_workflow
 import dotfiles
-from worker_files import install
+import worker_files
+from worker_files import install, install_many
 
 GIST = 'https://gist.github.com/example/' + 'a' * 32
 REVISION = 'b' * 40
@@ -170,18 +172,97 @@ builtin source "$1"
         self.base_configs()
         before = self.snapshot()
         original = json.loads(json.dumps(self.response))
-        mutations = [lambda x: x.update(truncated=True), lambda x: x['history'][0].update(version='c' * 40),
+        mutations = [lambda x: x.update(truncated=True), lambda x: x.update(id=None),
+                     lambda x: x['history'][0].update(version=None),
+                     lambda x: x['history'][0].update(version='c' * 40),
                      lambda x: x['files'].pop('gitconfig.shared'),
+                     lambda x: x['files']['zshrc.shared'].update(encoding='base64'),
                      lambda x: x['files']['zshrc.shared'].update(truncated=True),
                      lambda x: x['files']['zshrc.shared'].update(content='if then\n'),
                      lambda x: x['files']['gitconfig.shared'].update(content='[bad\n'),
                      lambda x: x['files']['gitconfig.shared'].update(content='[url "git@github.com:"]\ninsteadOf = https://github.com/\n')]
         for mutate in mutations:
             self.response = json.loads(json.dumps(original)); mutate(self.response); self.write_gist()
-            self.apply_gist(expected=1)
+            result = self.apply_gist(expected=1)
+            self.assertNotIn('Traceback', result.stderr)
             self.assertEqual(before, self.snapshot())
         self.apply_gist(expected=1, WORKER_TEST_FAIL_CURL='1')
         self.assertEqual(before, self.snapshot())
+
+    def test_gist_blocked_receipt_and_backup_paths_change_no_configs(self):
+        self.base_configs()
+        blocked = self.home / '.local'
+        blocked.write_text('not a directory\n')
+        before = self.snapshot()
+        self.apply_gist(expected=1)
+        self.assertEqual(before, self.snapshot())
+        blocked.unlink()
+        backups = self.home / '.local/state/worker/backups'
+        backups.mkdir(parents=True)
+        backups.rmdir(); backups.write_text('not a directory\n')
+        before = self.snapshot()
+        self.apply_gist(expected=1)
+        self.assertEqual(before, self.snapshot())
+
+    def managed_snapshot(self):
+        return {path: value for path, value in self.snapshot().items()
+                if not path.startswith('.local/state/worker/backups/')}
+
+    def test_gist_backup_failure_leaves_all_managed_files_unchanged(self):
+        self.base_configs()
+        before = self.managed_snapshot()
+        copy = worker_files.shutil.copy2
+        def fail_backup(source, *args, **kwargs):
+            if Path(source).name == '.gitconfig':
+                raise OSError('simulated second backup failure')
+            return copy(source, *args, **kwargs)
+        with patch.dict(os.environ, self.env), patch('tempfile.tempdir', str(self.base)), \
+                patch.object(worker_files.shutil, 'copy2', fail_backup):
+            with self.assertRaisesRegex(OSError, 'backup failure'):
+                dotfiles.setup(self.home, GIST, REVISION)
+        self.assertEqual(before, self.managed_snapshot())
+        self.assertFalse(list(self.home.rglob('.worker.*')))
+        self.apply_gist()
+        installed = self.snapshot()
+        self.apply_gist()
+        self.assertEqual(installed, self.snapshot())
+
+    def test_gist_write_failure_rolls_back_before_safe_retry(self):
+        self.base_configs(); self.apply_gist()
+        before = self.managed_snapshot()
+        for name in ('zshrc.shared', 'gitconfig.shared'):
+            self.response['files'][name]['content'] += '# updated\n'
+        self.write_gist()
+        replace = worker_files.os.replace
+        failed = False
+        def fail_once(source, target):
+            nonlocal failed
+            if Path(target).name == 'gitconfig.shared' and not failed:
+                failed = True
+                raise OSError('simulated second write failure')
+            return replace(source, target)
+        with patch.dict(os.environ, self.env), patch('tempfile.tempdir', str(self.base)), \
+                patch.object(worker_files.os, 'replace', fail_once):
+            with self.assertRaisesRegex(OSError, 'write failure'):
+                dotfiles.setup(self.home, GIST, REVISION, replace=True)
+        self.assertTrue(failed)
+        self.assertEqual(before, self.managed_snapshot())
+        self.assertFalse(list(self.home.rglob('.worker.*')))
+        self.apply_gist('--replace-config')
+        installed = self.snapshot()
+        self.apply_gist('--replace-config')
+        self.assertEqual(installed, self.snapshot())
+
+    def test_full_installer_gist_rerun_and_dry_run(self):
+        flags = ('--skip-extensions', '--skip-macos', '--dotfiles-gist', GIST, '--dotfiles-revision', REVISION)
+        self.run_worker(*flags)
+        before = self.snapshot()
+        self.run_worker(*flags)
+        self.assertEqual(before, self.snapshot())
+        self.log.write_text('')
+        self.run_worker(*flags, '--replace-config', '--dry-run')
+        self.assertEqual(before, self.snapshot())
+        self.assert_read_only_commands()
 
     def test_ambiguous_or_symlinked_hooks_are_preserved(self):
         self.base_configs()
@@ -219,6 +300,23 @@ builtin source "$1"
         self.write_gist(); self.apply_gist()
         self.assertFalse(sentinel.exists())
 
+    def test_gist_rejects_commented_hooks_and_invalid_local_syntax(self):
+        for modification in ('comment-local', 'comment-anchor', 'invalid-syntax'):
+            with self.subTest(modification=modification):
+                self.base_configs()
+                target = self.home / '.zshrc'
+                content = target.read_text()
+                if modification == 'comment-local':
+                    content = content.replace(dotfiles.LOCAL, '# ' + dotfiles.LOCAL)
+                elif modification == 'comment-anchor':
+                    content = content.replace('typeset -U path fpath\n', '# typeset -U path fpath\n')
+                else:
+                    content = 'if then\n' + content
+                target.write_text(content)
+                before = self.snapshot()
+                self.apply_gist(expected=1)
+                self.assertEqual(before, self.snapshot())
+
     def test_executable_backups_and_destination_symlinks(self):
         target = self.home / 'bin/helper'; target.parent.mkdir()
         external = self.base / 'external'; external.write_bytes(b'original')
@@ -246,6 +344,35 @@ builtin source "$1"
         self.assertTrue((self.home / 'go/bin/ctx').exists())
         self.assertFalse(any(s.startswith('curl ') for s in self.commands()))
 
+    def test_workflow_ignores_inherited_git_build_and_github_host_overrides(self):
+        self.workflow(GH_HOST='enterprise.example', GIT_CONFIG_COUNT='1',
+                      GIT_CONFIG_KEY_0='url.ssh://wrong/.insteadOf', GIT_CONFIG_VALUE_0='https://github.com/',
+                      GIT_CONFIG_PARAMETERS="'url.ssh://wrong/.insteadOf=https://github.com/'", GOFLAGS='-race')
+        archives = [line for line in self.commands() if line.startswith('gh api ')]
+        self.assertEqual(len(archives), 2)
+        self.assertTrue(all('--hostname github.com' in line for line in archives))
+
+    def test_workflow_invalid_receipt_and_corrupt_archive_have_clean_failures(self):
+        self.workflow()
+        receipt = self.home / '.local/state/worker/tools/ctx.json'
+        data = json.loads(receipt.read_text()); data['assets'] = None
+        receipt.write_text(json.dumps(data))
+        before = self.snapshot()
+        result = self.workflow(expected=2)
+        self.assertNotIn('Traceback', result.stderr)
+        self.assertEqual(before, self.snapshot())
+        (self.archives / 'ctx.tar.gz').write_bytes(b'not a tarball')
+        result = self.workflow('--replace-config', expected=1)
+        self.assertNotIn('Traceback', result.stderr)
+        self.assertEqual(before, self.snapshot())
+
+    def test_workflow_receipt_failure_does_not_install_binary_or_completion(self):
+        receipt = self.home / '.local/state/worker/tools/ctx.json'
+        receipt.mkdir(parents=True)
+        self.workflow(expected=1)
+        self.assertFalse((self.home / 'go/bin/ctx').exists())
+        self.assertFalse((self.home / '.zsh/completions/_ctx').exists())
+
     def test_captured_wrapper_forwards_arguments_to_the_selected_cli(self):
         cli = self.base / 'fixture ctx'
         cli.write_text('#!/bin/bash\nprintf "%s\\n" "$@"\n'); cli.chmod(0o700)
@@ -253,6 +380,34 @@ builtin source "$1"
                                 cwd=self.base, env={**self.env, 'CTX_CLI_BIN': str(cli)}, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.splitlines(), ['--help', 'argument with spaces'])
+
+    def test_ai_shot_propagates_conversion_identify_and_crop_failures(self):
+        magick = self.prefix / 'bin/magick'
+        magick.write_text('''#!/bin/bash
+case "$1" in
+  identify)
+    [[ "$SHOT_FAIL" != identify ]] || exit 21
+    printf '1200 9000'; exit 0 ;;
+esac
+[[ "$SHOT_FAIL" != resize || "$*" != *-resize* ]] || exit 21
+[[ "$SHOT_FAIL" != write || "$*" == *-resize* ]] || exit 21
+[[ "$SHOT_FAIL" != crop || "$*" != *-crop* ]] || exit 21
+touch "${!#}"
+''')
+        magick.chmod(0o700)
+        source = self.base / 'input.png'; source.touch()
+        for failure, flags in [('resize', ['--single']), ('write', ['--single']),
+                               ('identify', []), ('crop', [])]:
+            with self.subTest(failure=failure):
+                result = subprocess.run(['/bin/bash', str(ROOT / 'config/workflow/ai-shot'),
+                                         *flags, str(source)], env={**self.env, 'SHOT_FAIL': failure},
+                                        text=True, capture_output=True)
+                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertNotIn('created ', result.stdout)
+        result = subprocess.run(['/bin/bash', str(ROOT / 'config/workflow/ai-shot'), '--single', str(source)],
+                                env={**self.env, 'SHOT_FAIL': ''}, text=True, capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((self.base / 'input_md.png').exists())
 
     def test_workflow_build_failure_keeps_custom_binary_and_retry_backs_it_up(self):
         target = self.home / 'go/bin/ctx'; target.parent.mkdir(parents=True)
@@ -292,6 +447,65 @@ builtin source "$1"
             self.assertFalse(path.exists())
         self.helper('install-agents.py', '--root', str(ROOT), '--replace-config')
         self.assertEqual(config.read_bytes(), (ROOT / 'config/agents/codex.toml').read_bytes())
+
+    def test_agents_invalid_skill_destination_is_found_before_any_copy(self):
+        outside = self.base / 'outside'; outside.mkdir()
+        (self.home / '.agents').mkdir()
+        (self.home / '.agents/skills').symlink_to(outside)
+        before = self.snapshot()
+        self.helper('install-agents.py', '--root', str(ROOT), expected=1)
+        self.assertEqual(before, self.snapshot())
+        self.assertFalse((self.home / '.codex/config.toml').exists())
+        self.assertEqual(list(outside.iterdir()), [])
+
+    def test_desktop_profile_never_writes_through_parent_symlinks(self):
+        outside = self.base / 'outside'; outside.mkdir()
+        (self.home / 'Library').symlink_to(outside)
+        self.run_worker('--with-desktop', '--skip-extensions', '--skip-macos', expected=1)
+        self.assertEqual(list(outside.iterdir()), [])
+
+    def test_failed_rollback_retains_recoverable_original_and_reports_it(self):
+        original = self.home / 'original'; original.write_bytes(b'original')
+        replace = worker_files.os.replace
+        writes = 0
+        def fail_after_first(source, target):
+            nonlocal writes
+            writes += 1
+            if writes > 1:
+                raise OSError('simulated filesystem failure')
+            return replace(source, target)
+        with patch.object(worker_files.os, 'replace', fail_after_first):
+            with self.assertRaisesRegex(OSError, 'Rollback failed.*restore these files from'):
+                install_many(self.home, [('original', b'new', 0o600, True), ('fail', b'new', 0o600, False)])
+        backup = next((self.home / '.local/state/worker/backups').glob('*/original'))
+        self.assertEqual(backup.read_bytes(), b'original')
+        self.assertFalse((self.home / 'fail').exists())
+
+    def test_backup_metadata_does_not_overwrite_a_file_named_destination_txt(self):
+        target = self.home / 'bin/destination.txt'; target.parent.mkdir()
+        target.write_bytes(b'original')
+        install(self.home, 'bin/destination.txt', b'new', replace=True)
+        backup = next((self.home / '.local/state/worker/backups').glob('config.*'))
+        self.assertEqual((backup / 'original/destination.txt').read_bytes(), b'original')
+        self.assertEqual((backup / 'destination.txt').read_text(), str(target.resolve()) + '\n')
+
+    def test_group_rollback_restores_symlink_and_removes_new_file(self):
+        external = self.base / 'external'; external.write_bytes(b'original')
+        (self.home / 'link').symlink_to('../external')
+        replace = worker_files.os.replace
+        def fail_last(source, target):
+            if Path(target).name == 'fail':
+                raise OSError('simulated write failure')
+            return replace(source, target)
+        with patch.object(worker_files.os, 'replace', fail_last):
+            with self.assertRaises(OSError):
+                install_many(self.home, [('link', b'new', 0o600, True),
+                                         ('new', b'new', 0o600, False), ('fail', b'new', 0o600, False)])
+        self.assertTrue((self.home / 'link').is_symlink())
+        self.assertEqual(os.readlink(self.home / 'link'), '../external')
+        self.assertEqual(external.read_bytes(), b'original')
+        self.assertFalse((self.home / 'new').exists())
+        self.assertFalse(list(self.home.rglob('.worker.*')))
 
 
 if __name__ == '__main__':

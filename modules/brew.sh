@@ -86,6 +86,7 @@ setup_brew() {
   # Bundle cleanup is separate from install cleanup and can remove unrelated
   # packages/trust entries, especially with the separate optional Brewfile.
   unset HOMEBREW_BUNDLE_INSTALL_CLEANUP HOMEBREW_BUNDLE_FORCE_INSTALL_CLEANUP
+  setup_custom_taps
   run "$BREW_BIN" analytics off
   log '  Includes Amphetamine (Mac App Store, 937984704); sign in to the App Store before its first install.'
   log '  App Store installation may request authentication. If it fails, finish signing in and rerun ./make.'

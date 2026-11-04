@@ -169,7 +169,7 @@ process_one() {
     return 1
   fi
 
-  local dir name stem outdir tmp rw rh out pattern tiles last
+  local dir name stem outdir tmp rw rh out pattern tiles last dimensions
 
   dir=$(dirname -- "$input")
   name=$(basename -- "$input")
@@ -181,7 +181,7 @@ process_one() {
   fi
 
   outdir="${OUTDIR:-$dir}"
-  mkdir -p -- "$outdir"
+  mkdir -p -- "$outdir" || return
 
   if [[ "$MODE" == "single" ]]; then
     out="$outdir/${stem}_${SIZE}.${EXT}"
@@ -191,9 +191,9 @@ process_one() {
       -auto-orient \
       -resize "${TARGET_W}x${CHUNK_H}>" \
       -strip \
-      "$tmp"
+      "$tmp" || return
 
-    write_image "$tmp" "$out"
+    write_image "$tmp" "$out" || return
     printf 'created %s\n' "$out"
     return 0
   fi
@@ -204,13 +204,18 @@ process_one() {
     -auto-orient \
     -resize "${TARGET_W}x>" \
     -strip \
-    "$tmp"
+    "$tmp" || return
 
-  read -r rw rh < <("${IDENTIFY[@]}" -format '%w %h' "$tmp")
+  dimensions=$("${IDENTIFY[@]}" -format '%w %h' "$tmp") || return
+  read -r rw rh <<< "$dimensions"
+  if [[ ! "$rw" =~ ^[1-9][0-9]*$ || ! "$rh" =~ ^[1-9][0-9]*$ ]]; then
+    err "could not read image dimensions: $input"
+    return 1
+  fi
 
   if (( rh <= CHUNK_H )); then
     out="$outdir/${stem}_${SIZE}.${EXT}"
-    write_image "$tmp" "$out"
+    write_image "$tmp" "$out" || return
     printf 'created %s\n' "$out"
   else
     if (( OVERVIEW == 1 )); then
@@ -223,9 +228,9 @@ process_one() {
         -auto-orient \
         -resize "${TARGET_W}x${CHUNK_H}>" \
         -strip \
-        "$overview_tmp"
+        "$overview_tmp" || return
 
-      write_image "$overview_tmp" "$overview_out"
+      write_image "$overview_tmp" "$overview_out" || return
       printf 'created %s\n' "$overview_out"
     fi
 
@@ -264,7 +269,7 @@ process_one() {
           -scene 1 \
           "$pattern"
         ;;
-    esac
+    esac || return
 
     printf 'created %s through %s (%d chunks)\n' \
       "$outdir/${stem}_${SIZE}_01.${EXT}" \

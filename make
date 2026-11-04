@@ -17,6 +17,7 @@ WITH_ACCESS=0
 WITH_DESKTOP=0
 DOTFILES_GIST=""
 DOTFILES_REVISION=""
+TAPS_FILE=""
 export PYTHONDONTWRITEBYTECODE=1
 WORKER_HOME=${WORKER_HOME:-$HOME}
 WARNINGS=0
@@ -36,6 +37,7 @@ Usage: ./make [options]
   --with-backend    Install PostgreSQL 16, NATS, LocalStack CLI, and development utilities.
   --with-access     Install 1Password/CLI and Tailscale (sign-in remains manual).
   --with-desktop    Install selected desktop apps, font, and an iTerm dynamic profile.
+  --taps-file FILE  Add GitHub Homebrew taps from a local repository-URL list.
   --dotfiles-gist URL  Install shared dotfiles and migrate recognized include hooks with backups.
   --dotfiles-revision SHA  Required full revision for --dotfiles-gist.
   --help            Show this help.
@@ -57,11 +59,12 @@ while (( $# )); do
     --with-backend) WITH_BACKEND=1 ;;
     --with-access) WITH_ACCESS=1 ;;
     --with-desktop) WITH_DESKTOP=1 ;;
-    --dotfiles-gist|--dotfiles-revision)
+    --dotfiles-gist|--dotfiles-revision|--taps-file)
       [[ $# -ge 2 && -n "$2" && "$2" != --* ]] || { printf 'Missing value for %s\n' "$1" >&2; exit 2; }
       case "$1" in
         --dotfiles-gist) DOTFILES_GIST=$2 ;;
         --dotfiles-revision) DOTFILES_REVISION=$2 ;;
+        --taps-file) TAPS_FILE=$2 ;;
       esac
       shift ;;
     --help|-h) usage; exit 0 ;;
@@ -80,6 +83,11 @@ if [[ -n "$DOTFILES_GIST$DOTFILES_REVISION" ]]; then
   [[ "$DOTFILES_GIST" =~ ^https://gist\.github\.com/([a-zA-Z0-9-]+/)?[a-fA-F0-9]{20,64}/?$ && "$DOTFILES_REVISION" =~ ^[a-fA-F0-9]{40}$ ]] ||
     die 'Use --dotfiles-gist with a gist.github.com URL and --dotfiles-revision with a full 40-character SHA.'
 fi
+
+# Parse the entire list before CLT, Git repair, or Homebrew can make changes.
+# shellcheck source=modules/taps.sh
+source "$ROOT/modules/taps.sh"
+load_custom_taps
 
 [[ $(uname -s) == Darwin ]] || die 'Worker supports macOS only.'
 [[ $DRY_RUN == 1 || $EUID != 0 ]] || die 'Run worker as your normal user, not with sudo.'
